@@ -1,0 +1,8 @@
+" EPITA exam vimrc - the memorizable delta over Vim's built-in defaults.vim
+" (defaults.vim already gives: syntax, filetype indent, incsearch, wildmenu,
+"  ruler, backspace, mouse)
+" Type this from memory at exam start:  vim ~/.vimrc
+
+set nu et sw=4 sts=4 cc=80
+set ai cin hls ic scs
+set cb=unnamedplus
