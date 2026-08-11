@@ -25,6 +25,20 @@ link clang-format
 link gdbinit
 link inputrc
 
+# Plugin layer: ~/.vim lives on AFS; one plugin, native packages, no manager.
+mkdir -p "$DOT/vim/pack/kit/start"
+link vim
+
+# One-time plugin fetch (LSP client; clangd itself ships on the PIE).
+# Backgrounded and silent: a login must never wait on the network.
+if [ ! -d "$DOT/vim/pack/kit/start/lsp" ] && command -v git >/dev/null 2>&1; then
+    (
+        export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)}"
+        git clone -q --depth 1 https://github.com/yegappan/lsp \
+            "$DOT/vim/pack/kit/start/lsp"
+    ) >/dev/null 2>&1 &
+fi
+
 # tmux reads ~/.config/tmux/tmux.conf; link() only handles ~/.<name>
 mkdir -p "$HOME/.config/tmux" 2>/dev/null
 [ -e "$DOT/tmux.conf" ] && ln -sfn "$DOT/tmux.conf" "$HOME/.config/tmux/tmux.conf"

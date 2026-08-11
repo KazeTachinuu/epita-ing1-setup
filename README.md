@@ -67,6 +67,19 @@ Rehearse in the harness until the 3 lines are reflex: `./harness.sh exam`.
   (works only with the `.clang-format` at the repo root)
 - Submit: `git push --follow-tags` - the forgotten tag is the classic zero
 
+## The plugin layer: one plugin, no manager
+
+Day-to-day vim gains real IDE features from a single plugin:
+[yegappan/lsp](https://github.com/yegappan/lsp) talking to the clangd
+already installed on the PIE. install.sh clones it once into
+`afs/.confs/vim/pack/kit/start/` (vim's native package system, no
+Vundle/vim-plug needed) and links `~/.vim` there, so it works on every
+machine forever after. In C files: `gd` goto-definition, `gr` references,
+`K` hover docs, `Space r` rename, live diagnostics as you type.
+Update it (rarely needed): `git -C ~/afs/.confs/vim/pack/kit/start/lsp pull`.
+Exams have no AFS, so none of this exists there - which is why the
+mappings live behind `LspAttached` and the exam config never mentions it.
+
 ## Developing the kit (maintainers)
 
 Requires docker, bats, and a local `nixos-pie` image (build once from the

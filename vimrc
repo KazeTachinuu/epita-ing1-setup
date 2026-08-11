@@ -89,3 +89,11 @@ set path+=**            " :find name - fuzzy-ish file jumping, no plugin
 
 " Rename word under cursor across the buffer
 nnoremap <C-s> :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+
+" LSP via clangd (preinstalled on the PIE). The plugin is cloned once by
+" install.sh into pack/kit/start/lsp; this block is inert without it.
+autocmd User LspSetup call LspAddServer([{'name': 'clangd', 'filetype': ['c', 'cpp'], 'path': 'clangd', 'args': ['--background-index']}])
+autocmd User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
+autocmd User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
+autocmd User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>
+autocmd User LspAttached nnoremap <buffer> K :LspHover<CR>
