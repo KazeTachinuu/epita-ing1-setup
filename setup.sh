@@ -16,6 +16,12 @@ DOT="$HOME/afs/.confs"
 
 say() { printf '[+] %s\n' "$1"; }
 
+# no AFS here (VM, exam-like machine): a dangling ~/afs symlink becomes a
+# real local directory so the same paths work everywhere
+if [ -L "$HOME/afs" ] && [ ! -e "$HOME/afs" ]; then
+    say "no AFS mounted: using a local ~/afs directory instead"
+    rm "$HOME/afs"
+fi
 mkdir -p "$DOT"
 cd "$DOT"
 
