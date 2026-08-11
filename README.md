@@ -92,6 +92,25 @@ built-in look.
 Exams have no AFS, so none of this exists there - which is why the
 mappings live behind `LspAttached` and the exam config never mentions it.
 
+## Optional extras (one download, persist on AFS, absent in exams)
+
+The bashrc has inert hooks for these; installing is just putting the
+files on AFS (both verified running on the PIE image):
+
+```sh
+# starship prompt (static binary, works everywhere):
+mkdir -p ~/afs/.confs/bin
+curl -fsSL https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-musl.tar.gz \
+    | tar xz -C ~/afs/.confs/bin
+
+# ble.sh: fish-style autosuggestions + syntax highlighting for bash:
+curl -fsSL https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz \
+    | tar xJ -C ~/afs/.confs && mv ~/afs/.confs/ble-nightly ~/afs/.confs/blesh
+```
+
+The kit's core deliberately excludes them: exams have no AFS, and the
+core must match what your hands know there.
+
 ## Developing the kit (maintainers)
 
 Requires docker, bats, and a local `nixos-pie` image (build once from the

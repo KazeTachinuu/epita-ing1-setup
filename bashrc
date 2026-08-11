@@ -41,5 +41,10 @@ alias ccsan='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g3 -fsanitize=address
 # must come after sources on the link line.
 cctest() { gcc -std=c99 -Wall -Wextra -Werror -g3 "$@" -lcriterion; }
 
-# Optional nix extras land in ~/.nix-profile (see install.sh, PIE_NIX_EXTRAS)
+# Optional layers - every line inert unless you installed the thing.
+# nix extras (see install.sh):
 [ -r ~/.nix-profile/share/fzf/key-bindings.bash ] && . ~/.nix-profile/share/fzf/key-bindings.bash
+# AFS-persistent extras (see README "Optional extras"):
+[ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
+command -v starship >/dev/null && eval "$(starship init bash)"
+[ -r ~/afs/.confs/blesh/ble.sh ] && . ~/afs/.confs/blesh/ble.sh
