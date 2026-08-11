@@ -2,16 +2,27 @@
 [[ $- != *i* ]] && return
 
 # History that survives many terminals
-HISTSIZE=10000
-HISTFILESIZE=10000
+HISTSIZE=100000
+HISTFILESIZE=100000
 HISTCONTROL=ignoreboth
-shopt -s histappend checkwinsize
+shopt -s histappend checkwinsize globstar autocd
 
 export EDITOR=vim
+export UBSAN_OPTIONS=print_stacktrace=1
 
-# Prompt: cyan path, yellow git branch
-__branch() { git branch --show-current 2>/dev/null | sed 's/.*/ (&)/'; }
-PS1='\[\e[36m\]\w\[\e[33m\]$(__branch)\[\e[0m\] \$ '
+# Prompt: git's own contrib prompt (branch, dirty state, colors), with the
+# plain fallback if git's contrib dir ever moves. Path resolves through the
+# git derivation itself, so it works on any PIE image, exams included.
+GITC="$(git --exec-path 2>/dev/null)/../../share/git/contrib/completion"
+if [ -r "$GITC/git-prompt.sh" ]; then
+    . "$GITC/git-prompt.sh"
+    [ -r "$GITC/git-completion.bash" ] && . "$GITC/git-completion.bash"
+    GIT_PS1_SHOWDIRTYSTATE=1 GIT_PS1_SHOWUNTRACKEDFILES=1 GIT_PS1_SHOWCOLORHINTS=1
+    PROMPT_COMMAND='__git_ps1 "\[\e[36m\]\w\[\e[0m\]" " \$ " " (%s)"'
+else
+    __branch() { git branch --show-current 2>/dev/null | sed 's/.*/ (&)/'; }
+    PS1='\[\e[36m\]\w\[\e[33m\]$(__branch)\[\e[0m\] \$ '
+fi
 
 alias ls='ls --color=auto'
 alias ll='ls -lah'
@@ -22,9 +33,13 @@ alias gc='git commit -m'
 alias gp='git push --follow-tags'
 
 # Compile the piscine way: moulinette builds with -Wall -Wextra -Werror and
-# grades ASAN failures, so develop with the same flags from day one.
-alias cc99='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g'
-alias ccsan='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g -fsanitize=address'
+# grades ASAN failures; UBSAN is free and catches signed overflow.
+alias cc99='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g3'
+alias ccsan='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g3 -fsanitize=address,undefined'
 
-# Link against criterion for test suites (preinstalled on the PIE)
-alias cctest='gcc -std=c99 -Wall -Wextra -Werror -g -lcriterion'
+# Criterion test suites (preinstalled). Function, not alias: libraries
+# must come after sources on the link line.
+cctest() { gcc -std=c99 -Wall -Wextra -Werror -g3 "$@" -lcriterion; }
+
+# Optional nix extras land in ~/.nix-profile (see install.sh, PIE_NIX_EXTRAS)
+[ -r ~/.nix-profile/share/fzf/key-bindings.bash ] && . ~/.nix-profile/share/fzf/key-bindings.bash

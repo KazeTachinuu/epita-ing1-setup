@@ -23,5 +23,18 @@ link bashrc
 link gitconfig
 link clang-format
 link gdbinit
+link inputrc
+
+# tmux reads ~/.config/tmux/tmux.conf; link() only handles ~/.<name>
+mkdir -p "$HOME/.config/tmux" 2>/dev/null
+[ -e "$DOT/tmux.conf" ] && ln -sfn "$DOT/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+
+# Optional normal-day extras (opt in: touch $DOT/nix-extras).
+# Backgrounded and silent: must never delay or fail a login.
+if [ -e "$DOT/nix-extras" ] && command -v nix >/dev/null 2>&1; then
+    [ -n "${NIX_SSL_CERT_FILE:-}" ] || export NIX_SSL_CERT_FILE=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
+    nix --extra-experimental-features 'nix-command flakes' \
+        profile add nixpkgs#fzf nixpkgs#bash-completion >/dev/null 2>&1 &
+fi
 
 exit 0

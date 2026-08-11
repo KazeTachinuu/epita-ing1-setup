@@ -33,6 +33,8 @@ err()  { printf "${R}[-]${N} %s\n" "$1" >&2; }
 session_open() {
     cat <<EOF
 mkdir -p /tmp && chmod 1777 /tmp
+export MANPATH=/share/man
+
 mkdir -p $AFS/.confs && cp -rpL /kit/. $AFS/.confs/
 export HOME=/home/$PIE_LOGIN; mkdir -p \$HOME; cd \$HOME
 [ -e \$HOME/afs ] || ln -s $AFS \$HOME/afs

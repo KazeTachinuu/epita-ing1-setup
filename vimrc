@@ -1,10 +1,14 @@
 " EPITA PIE vimrc - zero plugins, works out of the box on vim-full 9.2 (NixOS PIE)
-" Install: curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/config/master/.vimrc.pie -o ~/.vimrc
+" Superset of vimrc.exam so exam muscle memory transfers 1:1.
+
+" Any user vimrc suppresses defaults.vim; re-source it first (incsearch,
+" scrolloff, mouse, ttimeout, filetype indent, last-cursor-position).
+source $VIMRUNTIME/defaults.vim
 
 " Interface
 set number relativenumber
 set mouse=a
-set wildmenu wildmode=longest:full,full
+set wildmode=longest:full,full wildoptions=pum
 set laststatus=2 ruler showcmd
 set scrolloff=8
 set colorcolumn=80
@@ -25,13 +29,15 @@ filetype plugin indent on
 set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 set autoindent
 autocmd FileType c,cpp setlocal cindent cinoptions=(0,:0
+autocmd Filetype make setlocal noexpandtab
 
-" EPITA style forbids trailing whitespace - make it visible
+" EPITA style forbids trailing whitespace and tabs - make both visible
+set list listchars=tab:>-,trail:-
 highlight ExtraWhitespace ctermbg=red guibg=#802020
 match ExtraWhitespace /\s\+$/
 
-" Search
-set incsearch hlsearch ignorecase smartcase
+" Search (incsearch comes from defaults.vim)
+set hlsearch ignorecase smartcase
 nnoremap <silent> <Esc><Esc> :nohlsearch<CR>
 
 " Persistent undo, no clutter files
@@ -74,8 +80,12 @@ if executable('clang-format')
   autocmd FileType c,cpp setlocal formatprg=clang-format\ --style=file\ --fallback-style=none
 endif
 
-" GDB inside vim (built in since vim 8.1): :Termdebug ./a.out
-packadd! termdebug
+" Built-in power features, zero install (all exam-available):
+packadd! termdebug      " :Termdebug ./a.out - GDB UI inside vim
+packadd! comment        " gcc / gc to toggle comments
+packadd! matchit        " % jumps on #if/#endif and more
+runtime ftplugin/man.vim " :Man malloc - offline man pages
+set path+=**            " :find name - fuzzy-ish file jumping, no plugin
 
 " Rename word under cursor across the buffer
 nnoremap <C-s> :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
