@@ -444,6 +444,17 @@ default: beginners should learn plain gdb output first.
 
 ---
 
+### Addendum (2026-08-11): home-manager / flakes for the kit - rejected
+
+home-manager ships in nixpie core, but the store is wiped at every
+netboot reboot, so `home-manager switch` re-realizes the closure over
+the network at every login on every machine - violating the instant,
+offline-safe login contract that install.sh's symlinks satisfy in
+milliseconds. Exams (RO store, no network) make it structurally
+impossible. flake.lock pinning would be more elegant than the kit's
+hand-rolled SHA pins, but equal in outcome. Nix stays on the
+maintainer side (image and VM builds), plain files on the student side.
+
 ## 5. Critic's gaps: resolution status
 
 - G0 (three conflicting exam vimrcs): RESOLVED. Reconciled in section 2.1;
