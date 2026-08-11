@@ -1,6 +1,6 @@
 # EPITA PIE starter kit
 
-A minimal, plugin-free dev environment for the C piscine, built from how the
+A minimal, tested dev environment for the C piscine, built from how the
 PIE actually works (nixpie source): your local home is wiped every session,
 but the PIE runs `~/afs/.confs/install.sh` at every login. This kit lives in
 `~/afs/.confs/` and re-links itself each session, idempotently.
@@ -10,7 +10,9 @@ but the PIE runs `~/afs/.confs/install.sh` at every login. This kit lives in
 ```sh
 mkdir -p ~/afs/.confs && cd ~/afs/.confs
 base=https://raw.githubusercontent.com/KazeTachinuu/config/master/pie
-for f in install.sh vimrc bashrc; do curl -fsSL "$base/$f" -o "$f"; done
+for f in install.sh vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
+    curl -fsSL "$base/$f" -o "$f"
+done
 chmod +x install.sh && ./install.sh
 ```
 
@@ -18,15 +20,15 @@ Log out, log in: done. Works on every PIE machine on every campus.
 
 ## What you get
 
-- `vimrc`: Vim 9 builtins only, nothing to install, nothing to break.
-  `Ctrl+N` file tree, `Space+m` make + quickfix (`Space+n`/`p`/`q`),
-  `:Format` runs `clang-format-epita` on the whole repo, `gq` formats a
-  selection, `:Termdebug ./a.out` is a full GDB UI, 80-column marker and
-  trailing-whitespace highlight because the moulinette's style check has a
-  75% malus.
-- `bashrc`: git-aware prompt, `cc99` / `ccsan` compile aliases matching the
-  moulinette's flags (it builds with -Werror and grades ASAN), `cctest` for
-  criterion suites.
+- `vimrc`: Vim 9 builtins first (`Ctrl+N` file tree, `Space+m` make +
+  quickfix, `:Termdebug ./a.out` GDB UI, 80-column and tab/trailing
+  guards for the 75%-malus style check) plus the four-plugin layer
+  below: LSP with clangd, auto-pairs, snippets, format-on-save.
+- `bashrc`: git-aware prompt with dirty state, `cc99` / `ccsan` compile
+  aliases matching the moulinette's flags (-Werror, ASAN+UBSAN),
+  `cctest` for criterion suites, readline upgrades via `inputrc`.
+- `gdbinit`, `tmux.conf`, `alacritty.toml`: history, pretty-print,
+  mouse, dark terminal.
 
 ## Exams
 
@@ -131,7 +133,7 @@ Requires docker, bats, and a local `nixos-pie` image (build once from the
 ```sh
 ./harness.sh login      # simulated PIE login with the kit applied
 ./harness.sh exam       # stock exam machine, nothing applied
-./harness.sh gui        # full i3 session in a Xephyr window
+./harness.sh gui        # full i3 session in a resizable window
 ./harness.sh reset      # wipe the fake AFS -> factory default
 bats test.bats          # 6 tests: the kit applies and can never break a login
 ```
