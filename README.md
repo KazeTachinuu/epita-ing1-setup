@@ -122,6 +122,13 @@ curl -fsSL https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-ni
     | tar xJ -C ~/afs/.confs && mv ~/afs/.confs/ble-nightly ~/afs/.confs/blesh
 ```
 
+```sh
+# GEF: power-user gdb (heap, registers, context panel), pinned + verified.
+# Learn plain gdb first; this is for when you outgrow it.
+curl -fsSL https://raw.githubusercontent.com/hugsy/gef/2026.01/gef.py -o ~/afs/.confs/gef.py
+echo "04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20  $HOME/afs/.confs/gef.py" | sha256sum -c - || rm ~/afs/.confs/gef.py
+```
+
 The kit's core deliberately excludes them: exams have no AFS, and the
 core must match what your hands know there.
 
