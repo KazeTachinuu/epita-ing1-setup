@@ -21,6 +21,8 @@ set wildoptions=pum                    " popup completion menu for :commands
 set laststatus=2                       " always show the statusline
 set signcolumn=yes                     " stable gutter (LSP diagnostics)
 set scrolloff=8                        " keep context around the cursor
+set cursorline                         " highlight the current line
+set breakindent                        " wrapped lines keep their indent
 set splitright splitbelow              " new splits open right/below
 set hidden                             " switch buffers without saving first
 set autoread                           " pick up external file changes
@@ -60,6 +62,9 @@ inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
 nnoremap <C-d> <C-d>zz                 " half-page jumps keep cursor centered
 nnoremap <C-u> <C-u>zz
+nnoremap n nzzzv                       " search hits land centered
+nnoremap N Nzzzv
+nnoremap J mzJ`z                       " join lines without moving the cursor
 
 " ---- leader ----------------------------------------------------------------
 nnoremap <Space> <Nop>
