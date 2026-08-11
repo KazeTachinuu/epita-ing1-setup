@@ -8,15 +8,13 @@ but the PIE runs `~/afs/.confs/install.sh` at every login. This kit lives in
 ## Install (once, from any PIE machine or via the SSH gate)
 
 ```sh
-mkdir -p ~/afs/.confs && cd ~/afs/.confs
-base=https://raw.githubusercontent.com/KazeTachinuu/config/master/pie
-for f in install.sh vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
-    curl -fsSL "$base/$f" -o "$f"
-done
-chmod +x install.sh && ./install.sh
+curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/config/master/pie/setup.sh | sh
 ```
 
-Log out, log in: done. Works on every PIE machine on every campus.
+One line, everything: vim (LSP, auto-pairs, snippets, format-on-save),
+bash, gdb, tmux, readline, dark alacritty, starship prompt, ble.sh.
+`PIE_MINIMAL=1` before the `sh` skips the last two. Log out, log in:
+done, on every PIE machine on every campus. Re-run any time to update.
 
 ## What you get
 
