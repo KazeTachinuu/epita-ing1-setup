@@ -1,0 +1,15 @@
+# EPITA PIE alacritty - dark, no surprises. Linked by install.sh to
+# ~/.config/alacritty/alacritty.toml (alacritty is the PIE's default terminal).
+
+[font]
+size = 11.0
+
+[font.normal]
+family = "DejaVu Sans Mono"
+
+[colors.primary]
+background = "#101014"
+foreground = "#d0d0d0"
+
+[scrolling]
+history = 100000

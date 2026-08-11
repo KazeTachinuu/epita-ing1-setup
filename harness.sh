@@ -34,6 +34,11 @@ session_open() {
     cat <<EOF
 mkdir -p /tmp && chmod 1777 /tmp
 export MANPATH=/share/man
+# the real PIE sets TERMINAL=alacritty via /etc/profile (absent in the
+# docker image); alacritty cannot run here (no GL), so a dark xterm
+# stands in for i3's \$mod+Enter
+printf '#!/bin/sh\nexec xterm -bg black -fg gray90 "\$@"\n' > /term && chmod +x /term
+export TERMINAL=/term
 
 mkdir -p $AFS/.confs && cp -rpL /kit/. $AFS/.confs/
 export HOME=/home/$PIE_LOGIN; mkdir -p \$HOME; cd \$HOME

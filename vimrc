@@ -93,6 +93,12 @@ if executable('clang-format')          " gq formats with the repo style
   autocmd pie FileType c,cpp setlocal formatprg=clang-format\ --style=file\ --fallback-style=none
 endif
 
+" auto-format C files on save (vim-clang-format plugin, cloned by
+" install.sh; inert without it). Only when a .clang-format governs the file.
+let g:clang_format#auto_format = 1
+let g:clang_format#detect_style_file = 1
+let g:clang_format#enable_fallback_style = 0
+
 " ---- built-in power (all exam-available) -----------------------------------
 packadd! termdebug                     " :Termdebug ./a.out - GDB UI in vim
 packadd! comment                       " gcc / gc toggles comments
@@ -101,10 +107,20 @@ runtime ftplugin/man.vim               " :Man malloc (K also works bare)
 
 " ---- LSP: clangd (preinstalled on the PIE) ---------------------------------
 " install.sh clones yegappan/lsp into pack/kit/start once; inert without it.
-autocmd pie User LspSetup call LspOptionsSet({'semanticHighlight': v:true})
+" Snippet support (function-argument placeholders) lights up when vsnip is
+" present; Tab jumps between placeholders.
+autocmd pie User LspSetup call LspOptionsSet(extend(
+    \ {'semanticHighlight': v:true},
+    \ exists(':VsnipOpen') == 2 ? {'snippetSupport': v:true, 'vsnipSupport': v:true} : {}))
+autocmd pie VimEnter * if exists(':VsnipOpen') == 2
+    \ | imap <expr> <Tab>   vsnip#jumpable(1)  ? '<Plug>(vsnip-jump-next)' : '<Tab>'
+    \ | smap <expr> <Tab>   vsnip#jumpable(1)  ? '<Plug>(vsnip-jump-next)' : '<Tab>'
+    \ | imap <expr> <S-Tab> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<S-Tab>'
+    \ | smap <expr> <S-Tab> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<S-Tab>'
+    \ | endif
 autocmd pie User LspSetup call LspAddServer([{
     \ 'name': 'clangd', 'filetype': ['c', 'cpp'],
-    \ 'path': 'clangd', 'args': ['--background-index'] }])
+    \ 'path': 'clangd', 'args': ['--background-index', '--fallback-style=none'] }])
 autocmd pie User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
 autocmd pie User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
 autocmd pie User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>

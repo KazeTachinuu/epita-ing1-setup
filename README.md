@@ -67,16 +67,27 @@ Rehearse in the harness until the 3 lines are reflex: `./harness.sh exam`.
   (works only with the `.clang-format` at the repo root)
 - Submit: `git push --follow-tags` - the forgotten tag is the classic zero
 
-## The plugin layer: one plugin, no manager
+## The plugin layer: four plugins, no manager
 
-Day-to-day vim gains real IDE features from a single plugin:
-[yegappan/lsp](https://github.com/yegappan/lsp) talking to the clangd
-already installed on the PIE. install.sh clones it once into
+install.sh clones a curated set once into
 `afs/.confs/vim/pack/kit/start/` (vim's native package system, no
-Vundle/vim-plug needed) and links `~/.vim` there, so it works on every
-machine forever after. In C files: `gd` goto-definition, `gr` references,
-`K` hover docs, `Space r` rename, live diagnostics as you type.
-Update it (rarely needed): `git -C ~/afs/.confs/vim/pack/kit/start/lsp pull`.
+Vundle/vim-plug needed) and links `~/.vim` there, so they exist on
+every machine forever after:
+
+- [yegappan/lsp](https://github.com/yegappan/lsp) + the preinstalled
+  clangd: `gd` goto-definition, `gr` references, `K` hover docs,
+  `Space r` rename, live diagnostics, semantic highlighting, and
+  completion with argument snippets (Tab jumps placeholders)
+- [LunarWatcher/auto-pairs](https://github.com/LunarWatcher/auto-pairs):
+  brackets and quotes close themselves
+- [hrsh7th/vim-vsnip](https://github.com/hrsh7th/vim-vsnip): the snippet
+  engine behind LSP completions
+- [rhysd/vim-clang-format](https://github.com/rhysd/vim-clang-format):
+  C files auto-format on save, only when a `.clang-format` governs them
+  (the graded style applies itself)
+
+Update (rarely needed):
+`for d in ~/afs/.confs/vim/pack/kit/start/*/; do git -C "$d" pull; done`
 
 Any plugin or colorscheme installs the same way - clone and it exists on
 every machine (verified with sonokai):

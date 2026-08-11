@@ -29,19 +29,23 @@ link inputrc
 mkdir -p "$DOT/vim/pack/kit/start"
 link vim
 
-# One-time plugin fetch (LSP client; clangd itself ships on the PIE).
-# Backgrounded and silent: a login must never wait on the network.
-if [ ! -d "$DOT/vim/pack/kit/start/lsp" ] && command -v git >/dev/null 2>&1; then
+# One-time plugin fetches (LSP client for the preinstalled clangd,
+# auto-pairs, snippet engine). Backgrounded and silent: a login must
+# never wait on the network.
+if command -v git >/dev/null 2>&1; then
     (
         export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)}"
-        git clone -q --depth 1 https://github.com/yegappan/lsp \
-            "$DOT/vim/pack/kit/start/lsp"
+        for repo in yegappan/lsp LunarWatcher/auto-pairs hrsh7th/vim-vsnip rhysd/vim-clang-format; do
+            d="$DOT/vim/pack/kit/start/${repo##*/}"
+            [ -d "$d" ] || git clone -q --depth 1 "https://github.com/$repo" "$d"
+        done
     ) >/dev/null 2>&1 &
 fi
 
-# tmux reads ~/.config/tmux/tmux.conf; link() only handles ~/.<name>
-mkdir -p "$HOME/.config/tmux" 2>/dev/null
+# XDG-path configs; link() only handles ~/.<name>
+mkdir -p "$HOME/.config/tmux" "$HOME/.config/alacritty" 2>/dev/null
 [ -e "$DOT/tmux.conf" ] && ln -sfn "$DOT/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+[ -e "$DOT/alacritty.toml" ] && ln -sfn "$DOT/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
 
 # Optional normal-day extras (opt in: touch $DOT/nix-extras).
 # Backgrounded and silent: must never delay or fail a login.
