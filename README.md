@@ -134,6 +134,7 @@ Requires docker, bats, and a local `nixos-pie` image (build once from the
 ./harness.sh login      # simulated PIE login with the kit applied
 ./harness.sh exam       # stock exam machine, nothing applied
 ./harness.sh gui        # full i3 session in a resizable window
+./harness.sh vm         # boot the REAL PIE in QEMU/KVM (top fidelity)
 ./harness.sh reset      # wipe the fake AFS -> factory default
 bats test.bats          # 6 tests: the kit applies and can never break a login
 ```

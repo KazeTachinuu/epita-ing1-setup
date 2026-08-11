@@ -74,6 +74,22 @@ cmd_gui() { ## PIE desktop (i3) in a resizable window, kit applied
         -e DISPLAY="$PIE_DISPLAY"
 }
 
+cmd_vm() { ## boot the REAL PIE (QEMU/KVM): SDDM, PAM, systemd - top fidelity
+    # needs the VM built into the nixpie-vm volume (see README maintainers)
+    pkill -f "Xwayland $PIE_DISPLAY" 2>/dev/null && sleep 1 || true
+    Xwayland "$PIE_DISPLAY" -ac -geometry "$PIE_RES" -decorate -host-grab 2>/dev/null &
+    trap 'kill $! 2>/dev/null' EXIT
+    sleep 1
+    info "booting nixos-pie VM (state persists in the nixpie-vm volume)"
+    if [ -t 0 ]; then _tty=-it; else _tty=-i; fi
+    docker run --rm $_tty --device /dev/kvm \
+        -v nixpie-vm:/nix -w /nix \
+        -v "/tmp/.X11-unix/X${PIE_DISPLAY#:}:/tmp/.X11-unix/X${PIE_DISPLAY#:}" \
+        -e DISPLAY="$PIE_DISPLAY" "$PIE_IMG" \
+        sh -c 'mkdir -p /tmp /nix/vm-state && chmod 1777 /tmp; cd /nix/vm-state
+               exec /nix/vm-result/bin/run-nixos-pie-vm -m 6144 -smp 4'
+}
+
 cmd_exam() { ## config-less machine (approximates exam-pie: same userland, no lockdown)
     info "exam image: stock defaults, nothing persists"
     docker run --rm -it -e TERM="${TERM:-xterm}" "$PIE_IMG" \
