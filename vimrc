@@ -9,6 +9,10 @@
 " ttimeout, filetype indent, last-cursor-position) - restore it first.
 source $VIMRUNTIME/defaults.vim
 
+" All autocmds live in one group, cleared on load: re-sourcing this file
+" is idempotent (no duplicated handlers).
+augroup pie | autocmd! | augroup END
+
 " ---- interface -------------------------------------------------------------
 set number relativenumber              " absolute + relative line numbers
 set mouse=a                            " mouse in every mode, any terminal
@@ -25,7 +29,7 @@ set clipboard=unnamedplus              " y/p use the system clipboard
 
 " ---- colors ----------------------------------------------------------------
 set termguicolors background=dark
-silent! colorscheme habamax            " ships with vim 9, no plugin
+silent! colorscheme habamax            " also shipped: retrobox catppuccin sorbet
 
 " ---- EPITA C style ---------------------------------------------------------
 set colorcolumn=80                     " the style's hard line limit
@@ -33,7 +37,7 @@ set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 set shiftround                         " >> snaps to multiples of 4
 set autoindent
 set list listchars=tab:>-,trail:-      " expose tabs and trailing spaces
-autocmd FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
+autocmd pie FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
 
 " ---- search ----------------------------------------------------------------
 set hlsearch ignorecase smartcase      " highlight all; smart casing
@@ -76,7 +80,7 @@ if executable('clang-format-epita')
   command! Format !clang-format-epita  " format the whole repo (EPITA wrapper)
 endif
 if executable('clang-format')          " gq formats with the repo style
-  autocmd FileType c,cpp setlocal formatprg=clang-format\ --style=file\ --fallback-style=none
+  autocmd pie FileType c,cpp setlocal formatprg=clang-format\ --style=file\ --fallback-style=none
 endif
 
 " ---- built-in power (all exam-available) -----------------------------------
@@ -87,10 +91,11 @@ runtime ftplugin/man.vim               " :Man malloc (K also works bare)
 
 " ---- LSP: clangd (preinstalled on the PIE) ---------------------------------
 " install.sh clones yegappan/lsp into pack/kit/start once; inert without it.
-autocmd User LspSetup call LspAddServer([{
+autocmd pie User LspSetup call LspOptionsSet({'semanticHighlight': v:true})
+autocmd pie User LspSetup call LspAddServer([{
     \ 'name': 'clangd', 'filetype': ['c', 'cpp'],
     \ 'path': 'clangd', 'args': ['--background-index'] }])
-autocmd User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
-autocmd User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
-autocmd User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>
-autocmd User LspAttached nnoremap <buffer> K :LspHover<CR>
+autocmd pie User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
+autocmd pie User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
+autocmd pie User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>
+autocmd pie User LspAttached nnoremap <buffer> K :LspHover<CR>
