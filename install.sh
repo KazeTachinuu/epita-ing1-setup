@@ -29,15 +29,26 @@ link inputrc
 mkdir -p "$DOT/vim/pack/kit/start"
 link vim
 
-# One-time plugin fetches (LSP client for the preinstalled clangd,
-# auto-pairs, snippet engine). Backgrounded and silent: a login must
-# never wait on the network.
+# One-time plugin fetches, pinned to exact commits and verified after
+# checkout (removed on any mismatch: no unpinned code ever persists).
+# Backgrounded and silent: a login must never wait on the network.
 if command -v git >/dev/null 2>&1; then
     (
         export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)}"
-        for repo in yegappan/lsp LunarWatcher/auto-pairs hrsh7th/vim-vsnip rhysd/vim-clang-format; do
+        for entry in \
+            "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
+            "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
+            "hrsh7th/vim-vsnip 9bcfabea653abdcdac584283b5097c3f8760abaa" \
+            "rhysd/vim-clang-format 6b791825ff478061ad1c57b21bb1ed5a5fd0eb29"
+        do
+            repo=${entry% *}; pin=${entry#* }
             d="$DOT/vim/pack/kit/start/${repo##*/}"
-            [ -d "$d" ] || git clone -q --depth 1 "https://github.com/$repo" "$d"
+            [ -d "$d" ] && continue
+            git init -q "$d" &&
+                git -C "$d" fetch -q --depth 1 "https://github.com/$repo" "$pin" &&
+                git -C "$d" checkout -q FETCH_HEAD &&
+                [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
+                rm -rf "$d"
         done
     ) >/dev/null 2>&1 &
 fi
