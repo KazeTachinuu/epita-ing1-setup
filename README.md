@@ -12,9 +12,9 @@ curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/config/master/pie/setu
 ```
 
 One line, everything: vim (LSP, auto-pairs, snippets, format-on-save),
-bash, gdb, tmux, readline, dark alacritty, starship prompt, ble.sh.
-`PIE_MINIMAL=1` before the `sh` skips the last two. Log out, log in:
-done, on every PIE machine on every campus. Re-run any time to update.
+bash, gdb, tmux, readline, dark alacritty, and a checksum-verified
+starship prompt (`PIE_MINIMAL=1` skips it). Log out, log in: done, on
+every PIE machine on every campus. Re-run any time to update.
 
 ## What you get
 
@@ -114,7 +114,10 @@ mkdir -p ~/afs/.confs/bin
 curl -fsSL https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-musl.tar.gz \
     | tar xz -C ~/afs/.confs/bin
 
-# ble.sh: fish-style autosuggestions + syntax highlighting for bash:
+# ble.sh: fish-style autosuggestions + syntax highlighting for bash.
+# Caveat before you run this: only the nightly build supports bash 5.3,
+# and nightly is a moving target with no checksum to pin - you are
+# trusting upstream at fetch time. Inspect it if that bothers you.
 curl -fsSL https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz \
     | tar xJ -C ~/afs/.confs && mv ~/afs/.confs/ble-nightly ~/afs/.confs/blesh
 ```
