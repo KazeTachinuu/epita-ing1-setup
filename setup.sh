@@ -11,7 +11,10 @@
 #   PIE_BASE=url   fetch from another location (testing)
 
 set -e
-BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/config/master/pie}"
+# configs are fetched from a pinned commit, not a mutable branch: the
+# bytes you get are exactly the bytes reviewed at release time
+PIN=6e1680b2804e9afb6bcee886dfbea143ef0b0fbf
+BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/config/$PIN/pie}"
 DOT="$HOME/afs/.confs"
 
 say() { printf '[+] %s\n' "$1"; }
