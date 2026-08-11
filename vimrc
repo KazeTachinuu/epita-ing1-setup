@@ -9,12 +9,11 @@ source $VIMRUNTIME/defaults.vim
 set number relativenumber
 set mouse=a
 set wildmode=longest:full,full wildoptions=pum
-set laststatus=2 ruler showcmd
+set laststatus=2 showcmd
 set scrolloff=8
 set colorcolumn=80
 set signcolumn=yes
 set clipboard=unnamedplus
-set encoding=utf-8
 set ttimeoutlen=50
 set hidden autoread
 set splitright splitbelow
@@ -22,19 +21,15 @@ set splitright splitbelow
 " Colors (habamax ships with vim 9, no plugin needed)
 set termguicolors background=dark
 silent! colorscheme habamax
-syntax enable
-filetype plugin indent on
 
-" Indentation - EPITA C style: 4 spaces, no tabs
+" Indentation - EPITA C style: 4 spaces, no tabs (cindent comes from the
+" C ftplugin; only the continuation-alignment tuning is ours)
 set expandtab tabstop=4 shiftwidth=4 softtabstop=4
 set autoindent
-autocmd FileType c,cpp setlocal cindent cinoptions=(0,:0
-autocmd Filetype make setlocal noexpandtab
+autocmd FileType c,cpp setlocal cinoptions=(0,:0
 
-" EPITA style forbids trailing whitespace and tabs - make both visible
+" EPITA style forbids tab characters and trailing whitespace - show both
 set list listchars=tab:>-,trail:-
-highlight ExtraWhitespace ctermbg=red guibg=#802020
-match ExtraWhitespace /\s\+$/
 
 " Search (incsearch comes from defaults.vim)
 set hlsearch ignorecase smartcase
@@ -53,7 +48,6 @@ nnoremap <expr> j v:count ? 'j' : 'gj'
 nnoremap <expr> k v:count ? 'k' : 'gk'
 nnoremap <C-d> <C-d>zz
 nnoremap <C-u> <C-u>zz
-nnoremap Q <nop>
 vnoremap J :m '>+1<CR>gv=gv
 vnoremap K :m '<-2<CR>gv=gv
 
@@ -87,8 +81,8 @@ packadd! matchit        " % jumps on #if/#endif and more
 runtime ftplugin/man.vim " :Man malloc - offline man pages
 set path+=**            " :find name - fuzzy-ish file jumping, no plugin
 
-" Rename word under cursor across the buffer
-nnoremap <C-s> :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+" Rename word under cursor across the buffer (LSP rename replaces this in C)
+nnoremap <leader>s :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
 
 " LSP via clangd (preinstalled on the PIE). The plugin is cloned once by
 " install.sh into pack/kit/start/lsp; this block is inert without it.
