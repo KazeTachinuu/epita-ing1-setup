@@ -13,7 +13,7 @@
 set -e
 # configs are fetched from a pinned commit, not a mutable branch: the
 # bytes you get are exactly the bytes reviewed at release time
-PIN=6e1680b2804e9afb6bcee886dfbea143ef0b0fbf
+PIN=8f6ce32d1c1a29688095a54040121a80a03a45c9
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/config/$PIN/pie}"
 DOT="$HOME/afs/.confs"
 
