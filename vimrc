@@ -14,7 +14,7 @@ source $VIMRUNTIME/defaults.vim
 augroup pie | autocmd! | augroup END
 
 " ---- interface -------------------------------------------------------------
-set number relativenumber              " absolute + relative line numbers
+set number                             " line numbers (gcc and gdb speak in them)
 set mouse=a                            " mouse in every mode, any terminal
 set wildmode=longest:full,full         " complete longest, then cycle
 set wildoptions=pum                    " popup completion menu for :commands
@@ -56,8 +56,6 @@ nnoremap <expr> j v:count ? 'j' : 'gj'
 nnoremap <expr> k v:count ? 'k' : 'gk'
 nnoremap <C-d> <C-d>zz                 " half-page jumps keep cursor centered
 nnoremap <C-u> <C-u>zz
-vnoremap J :m '>+1<CR>gv=gv            " move selection down, reindent
-vnoremap K :m '<-2<CR>gv=gv            " move selection up, reindent
 
 " ---- leader ----------------------------------------------------------------
 nnoremap <Space> <Nop>
