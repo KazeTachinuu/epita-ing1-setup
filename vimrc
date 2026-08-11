@@ -54,6 +54,10 @@ set nowritebackup noswapfile           " no *~ and .swp litter in repos
 " ---- movement --------------------------------------------------------------
 nnoremap <expr> j v:count ? 'j' : 'gj'
 nnoremap <expr> k v:count ? 'k' : 'gk'
+nnoremap <Down> gj
+nnoremap <Up> gk
+inoremap <Down> <C-o>gj
+inoremap <Up> <C-o>gk
 nnoremap <C-d> <C-d>zz                 " half-page jumps keep cursor centered
 nnoremap <C-u> <C-u>zz
 
