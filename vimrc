@@ -60,11 +60,13 @@ nnoremap <Down> gj
 nnoremap <Up> gk
 inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
-nnoremap <C-d> <C-d>zz                 " half-page jumps keep cursor centered
+"" half-page jumps and search hits keep the cursor centered
+nnoremap <C-d> <C-d>zz
 nnoremap <C-u> <C-u>zz
-nnoremap n nzzzv                       " search hits land centered
+nnoremap n nzzzv
 nnoremap N Nzzzv
-nnoremap J mzJ`z                       " join lines without moving the cursor
+" join lines without moving the cursor
+nnoremap J mzJ`z
 
 " ---- leader ----------------------------------------------------------------
 nnoremap <Space> <Nop>
@@ -83,8 +85,9 @@ nnoremap <leader>n :cnext<CR>
 nnoremap <leader>p :cprev<CR>
 nnoremap <leader>q :copen<CR>
 nnoremap <leader>s :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
+" :Format runs the EPITA wrapper over the whole repo
 if executable('clang-format-epita')
-  command! Format !clang-format-epita  " format the whole repo (EPITA wrapper)
+  command! Format !clang-format-epita
 endif
 if executable('clang-format')          " gq formats with the repo style
   autocmd pie FileType c,cpp setlocal formatprg=clang-format\ --style=file\ --fallback-style=none
