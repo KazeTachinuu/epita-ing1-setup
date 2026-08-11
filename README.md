@@ -77,6 +77,18 @@ Vundle/vim-plug needed) and links `~/.vim` there, so it works on every
 machine forever after. In C files: `gd` goto-definition, `gr` references,
 `K` hover docs, `Space r` rename, live diagnostics as you type.
 Update it (rarely needed): `git -C ~/afs/.confs/vim/pack/kit/start/lsp pull`.
+
+Any plugin or colorscheme installs the same way - clone and it exists on
+every machine (verified with sonokai):
+
+```sh
+git clone --depth 1 https://github.com/sainnhe/sonokai \
+    ~/afs/.confs/vim/pack/kit/start/sonokai
+```
+
+then point the `colorscheme` line in vimrc at it. Vim 9 already ships
+habamax, retrobox, catppuccin and sorbet if you just want a different
+built-in look.
 Exams have no AFS, so none of this exists there - which is why the
 mappings live behind `LspAttached` and the exam config never mentions it.
 
