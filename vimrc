@@ -9,7 +9,7 @@ source $VIMRUNTIME/defaults.vim
 set number relativenumber
 set mouse=a
 set wildmode=longest:full,full wildoptions=pum
-set laststatus=2 showcmd
+set laststatus=2
 set scrolloff=8
 set colorcolumn=80
 set signcolumn=yes
@@ -24,9 +24,9 @@ silent! colorscheme habamax
 
 " Indentation - EPITA C style: 4 spaces, no tabs (cindent comes from the
 " C ftplugin; only the continuation-alignment tuning is ours)
-set expandtab tabstop=4 shiftwidth=4 softtabstop=4
+set expandtab tabstop=4 shiftwidth=4 softtabstop=4 shiftround
 set autoindent
-autocmd FileType c,cpp setlocal cinoptions=(0,:0
+autocmd FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
 
 " EPITA style forbids tab characters and trailing whitespace - show both
 set list listchars=tab:>-,trail:-
@@ -41,7 +41,7 @@ if !isdirectory($HOME . '/.vim/undo')
   call mkdir($HOME . '/.vim/undo', 'p')
 endif
 set undodir=~/.vim/undo//
-set nobackup nowritebackup noswapfile
+set nowritebackup noswapfile
 
 " Movement
 nnoremap <expr> j v:count ? 'j' : 'gj'
@@ -59,7 +59,8 @@ let g:netrw_banner = 0
 let g:netrw_liststyle = 3
 nnoremap <C-n> :Lexplore<CR>
 
-" C workflow: make + quickfix
+" C workflow: make + quickfix (autowrite saves before :make)
+set autowrite
 nnoremap <leader>m :make<CR>
 nnoremap <leader>n :cnext<CR>
 nnoremap <leader>p :cprev<CR>
