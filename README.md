@@ -69,6 +69,7 @@ Needs docker, bats, and the nixos-pie image:
 | `./harness.sh vm` | boot the real PIE in QEMU/KVM |
 | `./harness.sh paste` | type the host clipboard into the running VM |
 | `./harness.sh reset` | wipe the fake AFS |
+| `./harness.sh vmreset` | wipe the VM disk, keep the VM image |
 | `bats test.bats` | the kit applies, and can never break a login |
 
 The harness replays the real login path from nixpie's PAM hook.

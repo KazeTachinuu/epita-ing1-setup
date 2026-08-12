@@ -149,6 +149,12 @@ cmd_reset() { ## wipe the fake AFS -> factory default
     ok "fake AFS wiped -> factory default"
 }
 
+cmd_vmreset() { ## wipe the VM disk -> next vm boot is factory-fresh
+    docker rm -f pie-vm >/dev/null 2>&1 || true
+    docker run --rm -v nixpie-vm:/nix "$PIE_IMG" sh -c 'rm -rf /nix/vm-state/*'
+    ok "VM state wiped -> factory default (the VM image itself is kept)"
+}
+
 cmd_run() { # plumbing for test.bats: login, then run a probe command
     session "$*" -i </dev/null
 }
