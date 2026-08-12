@@ -66,7 +66,7 @@ Needs docker, bats, and the nixos-pie image:
 | `./harness.sh login` | PIE shell, kit applied |
 | `./harness.sh exam` | stock exam machine |
 | `./harness.sh gui` | full i3 desktop in a window |
-| `./harness.sh vm` | boot the real PIE in QEMU/KVM |
+| `./harness.sh vm` | boot the real PIE in a window; close it to shut down |
 | `./harness.sh paste` | type the host clipboard into the running VM |
 | `./harness.sh reset` | wipe the fake AFS |
 | `./harness.sh vmreset` | wipe the VM disk, keep the VM image |
