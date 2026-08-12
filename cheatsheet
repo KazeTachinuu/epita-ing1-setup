@@ -4,10 +4,12 @@ compile
   cc99 main.c                 moulinette flags (-std=c99 -Wall -Wextra -Werror -pedantic -g3)
   ccsan main.c                same + ASAN/UBSAN
   cctest test.c str.c         criterion suite -> ./a.out
+  cccov test.c str.c          same + coverage report -> coverage/index.html
 style
   clang-format -i *.c         apply the graded style (vim formats C on save)
   coding-style-check .        style linter: 54 rules clang-format cannot check
 submit
+  submit tagname              clean-tree + format gate, annotated tag, push --follow-tags
   gp                          git push --follow-tags
 search
   rg word                     grep the repo
@@ -22,7 +24,14 @@ vim
   :Termdebug ./a.out          gdb in vim
 gdb
   gdb ./a.out                 GEF loads if installed
+  valgrind ./a.out            on a cc99 build (ASAN and valgrind conflict)
 tmux
   tmux                        mouse on, vi copy mode
 
-exams: no AFS, none of this exists; memorize vimrc.exam (3 lines)
+i3 (stock, identical on exams)
+  Super+Enter / Super+d       terminal / launcher
+  Super+1..9                  workspaces
+  Super+Shift+q               close window
+  i3lock -c 000000            lock when you leave (pranks target unlocked seats)
+
+exams: no AFS, kit tools absent; memorize vimrc.exam (3 lines)

@@ -33,13 +33,37 @@ alias gc='git commit -m'
 alias gp='git push --follow-tags'
 
 # Compile the piscine way: moulinette builds with -Wall -Wextra -Werror and
-# grades ASAN failures; UBSAN is free and catches signed overflow.
-alias cc99='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g3'
-alias ccsan='gcc -std=c99 -Wall -Wextra -Werror -pedantic -g3 -fsanitize=address,undefined'
+# grades ASAN failures; UBSAN is free and catches signed overflow. -Wvla
+# because the style bans VLAs. cc99 builds are valgrind/rr-compatible
+# (ASAN is not, use ccsan OR valgrind, never both).
+alias cc99='gcc -std=c99 -Wall -Wextra -Wvla -Werror -pedantic -g3'
+alias ccsan='gcc -std=c99 -Wall -Wextra -Wvla -Werror -pedantic -g3 -fsanitize=address,undefined'
 
 # Criterion test suites (preinstalled). Function, not alias: libraries
 # must come after sources on the link line.
-cctest() { gcc -std=c99 -Wall -Wextra -Werror -g3 "$@" -lcriterion; }
+cctest() { gcc -std=c99 -Wall -Wextra -Wvla -Werror -g3 "$@" -lcriterion; }
+
+# cccov test.c src.c: criterion suite with a coverage report
+cccov() {
+    gcc -std=c99 -Wall -Wextra -Werror -g3 --coverage "$@" -lcriterion || return
+    ./a.out
+    lcov -q -c -d . -o .cov.info && genhtml -q .cov.info -o coverage \
+        && echo "coverage/index.html"
+}
+
+# submit <tag>: the moulinette flow - clean tree, formatted, annotated
+# tag, push with tags. The forgotten tag or unformatted tree is the
+# classic zero; this refuses both.
+submit() {
+    [ $# -eq 1 ] || { echo 'usage: submit <tagname>' >&2; return 2; }
+    [ -z "$(git status --porcelain)" ] \
+        || { echo 'submit: uncommitted changes, commit first' >&2; return 1; }
+    if [ -e "$(git rev-parse --show-toplevel)/.clang-format" ] && command -v clang-format >/dev/null; then
+        git ls-files '*.c' '*.h' | xargs -r clang-format --Werror --dry-run 2>/dev/null \
+            || { echo 'submit: unformatted files, run: clang-format -i *.c *.h' >&2; return 1; }
+    fi
+    git tag -a "$1" -m "$1" && git push --follow-tags
+}
 
 # Optional layers - every line inert unless you installed the thing.
 # nix extras (see install.sh):
