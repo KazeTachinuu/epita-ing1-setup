@@ -28,10 +28,9 @@ set hidden                             " switch buffers without saving first
 set autoread                           " pick up external file changes
 set ttimeoutlen=50                     " snappy Esc
 set clipboard=unnamedplus              " y/p use the system clipboard
-" X clipboard dies with its owner and the PIE runs no clipboard manager:
-" hand the selection to xsel on exit so yanks survive quitting vim
-autocmd pie VimLeave * if executable('xsel') && !empty(getreg('+'))
-    \ | call system('xsel -ib', getreg('+')) | endif
+" keep the last yank on the clipboard after vim exits (X selections die
+" with their owner; xsel outlives vim and holds it)
+autocmd pie VimLeave * silent! call system('xsel -ib', getreg('+'))
 
 " ---- colors ----------------------------------------------------------------
 set termguicolors background=dark
