@@ -12,7 +12,7 @@ set -eu
 
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
-PIN=915da6c0cab0c63c7b628052d84083062b43f64f
+PIN=5ac14c7cfd1971f2f9f10ef03a89bfabefdba8ac
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 DOT="$HOME/afs/.confs"
 FILES="install.sh clang-format starship.toml vimrc vimrc.exam bashrc
@@ -24,11 +24,12 @@ GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
-    G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' N='\033[0m'
+    G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' D='\033[2m' N='\033[0m'
 else
-    G= Y= B= N=
+    G= Y= B= D= N=
 fi
 say()      { printf "${G}[+]${N} %s\n" "$1"; }
+skip()     { printf "${D}[=]${N} ${D}%s${N}\n" "$1"; }
 warn()     { printf "${Y}[-]${N} %s\n" "$1"; }
 extras()   { [ "${PIE_MINIMAL:-0}" != 1 ]; }
 verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
@@ -44,52 +45,70 @@ fi
 mkdir -p "$DOT"
 cd "$DOT"
 
-say "fetching configs -> $DOT"
+# every download lands under a temporary name and is moved into place
+# only when complete (and verified); the trap sweeps interrupted leftovers
+trap 'rm -rf "$DOT"/.new.*' EXIT
+
+set -- $FILES
+say "configs: fetching $# files -> $DOT"
 for f in $FILES; do
-    curl -fsSL "$BASE/$f" -o "$f"
+    curl -fsSL "$BASE/$f" -o ".new.$f"
+    mv ".new.$f" "$f"
 done
 chmod +x install.sh
 
-# link everything before the optional downloads: a network failure below
+# link configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
-say "running install.sh (links configs, clones vim plugins in background)"
+say "configs: linked into \$HOME (install.sh; vim plugins clone in background)"
+
 AFS_DIR="$HOME/afs" ./install.sh
 
 # the extras below are loaded by inert hooks (bashrc, gdbinit) only when
 # present; each one skips on failure, the kit works without any of them
 
 # starship: pinned static binary, checksum-verified
-if extras && [ ! -x bin/starship ]; then
-    say "fetching starship v$STARSHIP_V (verified)"
-    tmp=$(mktemp)
-    if curl -fsSL -o "$tmp" \
+if ! extras; then :
+elif [ -x bin/starship ]; then
+    skip "starship: already installed ($(bin/starship --version 2>/dev/null | head -1 || echo unknown))"
+else
+    say "starship: fetching v$STARSHIP_V (checksum-verified)"
+    if curl -fsSL -o .new.starship.tgz \
         "https://github.com/starship/starship/releases/download/v$STARSHIP_V/starship-x86_64-unknown-linux-musl.tar.gz" \
-        && verified "$tmp" "$STARSHIP_SHA"; then
-        mkdir -p bin && tar xzf "$tmp" -C bin
+        && verified .new.starship.tgz "$STARSHIP_SHA" \
+        && mkdir -p .new.bin && tar xzf .new.starship.tgz -C .new.bin; then
+        mkdir -p bin && mv .new.bin/starship bin/starship
     else
-        warn "starship fetch or checksum failed, skipping"
+        warn "starship: fetch or checksum failed, skipped"
     fi
-    rm -f "$tmp"
 fi
 
 # ble.sh: nightly is the only build for bash 5.3 and ships no stable
 # checksum upstream, so this one cannot be pinned
-if extras && [ ! -r blesh/ble.sh ]; then
-    say "fetching ble.sh nightly (unpinned: no stable checksum upstream)"
-    if curl -fsSL https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz | tar xJ; then
-        rm -rf blesh && mv ble-nightly blesh
+if ! extras; then :
+elif [ -r blesh/ble.sh ]; then
+    skip "ble.sh: already installed"
+else
+    say "ble.sh: fetching nightly (unpinned: no stable checksum upstream)"
+    if mkdir -p .new.blesh && curl -fsSL \
+        https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz \
+        | tar xJ -C .new.blesh --strip-components=1; then
+        rm -rf blesh && mv .new.blesh blesh
     else
-        warn "ble.sh fetch failed, skipping"
+        warn "ble.sh: fetch failed, skipped"
     fi
 fi
 
 # GEF: pinned release, checksum-verified
-if extras && [ ! -e gef.py ]; then
-    say "fetching GEF $GEF_V (verified)"
-    if curl -fsSL -o gef.py "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" \
-        && verified gef.py "$GEF_SHA"; then :; else
-        warn "GEF fetch or checksum failed, skipping"
-        rm -f gef.py
+if ! extras; then :
+elif [ -e gef.py ]; then
+    skip "GEF: already installed"
+else
+    say "GEF: fetching $GEF_V (checksum-verified)"
+    if curl -fsSL -o .new.gef.py "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" \
+        && verified .new.gef.py "$GEF_SHA"; then
+        mv .new.gef.py gef.py
+    else
+        warn "GEF: fetch or checksum failed, skipped"
     fi
 fi
 
