@@ -17,7 +17,17 @@ PIN=8f6ce32d1c1a29688095a54040121a80a03a45c9
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/config/$PIN/pie}"
 DOT="$HOME/afs/.confs"
 
-say() { printf '[+] %s\n' "$1"; }
+# colors only on a real terminal, and never when NO_COLOR is set
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+    G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' R='\033[0m'
+else
+    G= Y= B= R=
+fi
+
+say()  { printf "${G}[+]${R} %s\n" "$1"; }
+warn() { printf "${Y}[-]${R} %s\n" "$1"; }
+
+printf "${B}==>${R} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
 # no AFS here (VM, exam-like machine): a dangling ~/afs symlink becomes a
 # real local directory so the same paths work everywhere
@@ -44,7 +54,7 @@ if [ "${PIE_MINIMAL:-0}" != 1 ] && [ ! -x bin/starship ]; then
     if printf '%s  /tmp/starship.tgz\n' "$STARSHIP_SHA" | sha256sum -c - >/dev/null 2>&1; then
         mkdir -p bin && tar xzf /tmp/starship.tgz -C bin
     else
-        printf '[-] starship checksum mismatch, skipping (kit works without it)\n'
+        warn "starship checksum mismatch, skipping (kit works without it)"
     fi
     rm -f /tmp/starship.tgz
 fi
@@ -52,4 +62,4 @@ fi
 say "running install.sh (links configs, clones vim plugins in background)"
 AFS_DIR="$HOME/afs" ./install.sh
 
-say "done. Log out and back in, or run: exec bash"
+printf "${G}==>${R} done. Log out and back in, or run: exec bash\n"
