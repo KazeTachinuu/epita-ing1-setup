@@ -54,3 +54,11 @@ Needs docker, bats, and the nixos-pie image:
 | `bats test.bats` | the kit applies, and can never break a login |
 
 The harness replays the real login path from nixpie's PAM hook.
+
+VM clipboard: the harness exposes a qemu-vdagent channel; the guest half
+needs spice-vdagent running inside the VM (root for the daemon):
+
+```sh
+nix profile install nixpkgs#spice-vdagent
+sudo spice-vdagentd && spice-vdagent
+```

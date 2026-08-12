@@ -81,11 +81,16 @@ cmd_vm() { ## boot the REAL PIE (QEMU/KVM): SDDM, PAM, systemd - top fidelity
     trap 'kill $! 2>/dev/null' EXIT
     sleep 1
     info "booting nixos-pie VM (state persists in the nixpie-vm volume)"
+    info "clipboard: needs spice-vdagent in the guest (see README)"
     if [ -t 0 ]; then _tty=-it; else _tty=-i; fi
+    # qemu-vdagent gives host<->guest clipboard through the GTK display,
+    # provided the guest runs spice-vdagent (inert otherwise)
     docker run --rm $_tty --device /dev/kvm \
         -v nixpie-vm:/nix -w /nix \
         -v "/tmp/.X11-unix/X${PIE_DISPLAY#:}:/tmp/.X11-unix/X${PIE_DISPLAY#:}" \
-        -e DISPLAY="$PIE_DISPLAY" "$PIE_IMG" \
+        -e DISPLAY="$PIE_DISPLAY" \
+        -e QEMU_OPTS="-display gtk -chardev qemu-vdagent,id=vdagent,name=vdagent,clipboard=on -device virtio-serial-pci -device virtserialport,chardev=vdagent,name=com.redhat.spice.0" \
+        "$PIE_IMG" \
         sh -c 'mkdir -p /tmp /nix/vm-state && chmod 1777 /tmp; cd /nix/vm-state
                exec /nix/vm-result/bin/run-nixos-pie-vm -m 6144 -smp 4'
 }
