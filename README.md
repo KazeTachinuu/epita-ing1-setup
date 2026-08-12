@@ -19,9 +19,9 @@ Log out, log back in. Re-run any time to update.
   moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion
 - **gdb**: history, pretty-print, and GEF (pinned, checksum-verified)
 - **readline**: prefix history search on the arrows, colored menu completion
-  (fzf fuzzy history is one `touch ~/afs/.confs/nix-extras` away)
+  plus fzf: fuzzy `Ctrl-R` history and `Ctrl-T` file search (verified)
 - **tmux**, **alacritty**, **starship** with my prompt
-  config (`PIE_MINIMAL=1` skips starship and GEF)
+  config (`PIE_MINIMAL=1` skips starship, fzf and GEF)
 
 Configs are fetched from a pinned commit and starship is
 checksum-verified: what you run is what was reviewed.

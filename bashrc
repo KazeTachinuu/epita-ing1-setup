@@ -44,7 +44,9 @@ cctest() { gcc -std=c99 -Wall -Wextra -Werror -g3 "$@" -lcriterion; }
 # Optional layers - every line inert unless you installed the thing.
 # nix extras (see install.sh):
 [ -r ~/.nix-profile/share/fzf/key-bindings.bash ] && . ~/.nix-profile/share/fzf/key-bindings.bash
-# AFS-persistent extras (see README "Optional extras"):
+# AFS-persistent extras (installed by setup.sh):
 [ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
 command -v starship >/dev/null && eval "$(starship init bash)"
+command -v fzf >/dev/null && [ -r ~/afs/.confs/fzf-key-bindings.bash ] \
+    && . ~/afs/.confs/fzf-key-bindings.bash
 [ -r ~/afs/.confs/blesh/ble.sh ] && . ~/afs/.confs/blesh/ble.sh
