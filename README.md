@@ -30,22 +30,6 @@ Log out, log back in. Re-run any time to update.
 Configs are fetched from a pinned commit; binaries (starship, fzf, fd,
 rg, GEF) are checksum-verified. `PIE_MINIMAL=1` skips the downloads.
 
-## From your own machine
-
-`kinit <login>@CRI.EPITA.FR`, then ssh and AFS work passwordless with:
-
-```
-# ~/.ssh/config
-Host ssh.cri.epita.fr
-    User <login>
-    GSSAPIAuthentication yes
-    GSSAPIDelegateCredentials yes
-```
-
-```sh
-sshfs -o reconnect ssh.cri.epita.fr:/afs/cri.epita.fr/user/<l>/<ll>/<login>/u ~/pie-afs
-```
-
 ## Exams
 
 Exam machines have no AFS and no network; nothing above exists there.
