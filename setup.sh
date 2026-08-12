@@ -7,7 +7,7 @@
 # readline, alacritty, checksum-verified starship); the PIE then reapplies
 # it at every login on every campus machine. Safe to re-run any time.
 #
-#   PIE_MINIMAL=1  skip the extras (starship)
+#   PIE_MINIMAL=1  skip the extras (starship, ble.sh, GEF)
 #   PIE_BASE=url   fetch from another location (testing)
 
 set -e
@@ -57,6 +57,18 @@ if [ "${PIE_MINIMAL:-0}" != 1 ] && [ ! -x bin/starship ]; then
         warn "starship checksum mismatch, skipping (kit works without it)"
     fi
     rm -f /tmp/starship.tgz
+fi
+
+# ble.sh: autosuggestions + syntax highlighting; bashrc loads it only if
+# present. Nightly is the only build for bash 5.3 and has no stable
+# checksum upstream, so this one is fetched unpinned (not fatal on failure).
+if [ "${PIE_MINIMAL:-0}" != 1 ] && [ ! -r blesh/ble.sh ]; then
+    say "fetching ble.sh nightly (unpinned: no stable checksum upstream)"
+    if curl -fsSL https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz | tar xJ; then
+        rm -rf blesh && mv ble-nightly blesh
+    else
+        warn "ble.sh fetch failed, skipping (kit works without it)"
+    fi
 fi
 
 # GEF: pinned release, checksum-verified; gdbinit loads it only if present
