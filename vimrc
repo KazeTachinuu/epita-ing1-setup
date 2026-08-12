@@ -126,7 +126,11 @@ autocmd pie User LspSetup call LspAddServer([{
     \ 'name': 'clangd', 'filetype': ['c', 'cpp'],
     \ 'path': 'clangd', 'args': ['--background-index', '--fallback-style=none'] }])
 autocmd pie User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
+autocmd pie User LspAttached nnoremap <buffer> gD :LspGotoDeclaration<CR>
 autocmd pie User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
 autocmd pie User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>
 autocmd pie User LspAttached nnoremap <buffer> <leader>a :LspCodeAction<CR>
+autocmd pie User LspAttached nnoremap <buffer> <leader>h :LspSwitchSourceHeader<CR>
+autocmd pie User LspAttached nnoremap <buffer> ]d :LspDiag next<CR>
+autocmd pie User LspAttached nnoremap <buffer> [d :LspDiag prev<CR>
 autocmd pie User LspAttached nnoremap <buffer> K :LspHover<CR>

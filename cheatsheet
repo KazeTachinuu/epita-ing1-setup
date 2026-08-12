@@ -19,8 +19,10 @@ search
 vim
   Ctrl-N                      file tree
   Space m / n / p             make / next / prev error
-  gd gr K Space r             definition, references, docs, rename
-  Space a                     apply the "fix available" (code action)
+  gd gD gr                    definition, declaration, references
+  K Space r Space a           docs, rename, apply the "fix available"
+  ]d [d                       next / prev error
+  Space h                     switch between .c and .h
   main<Tab>                   snippet; Tab jumps placeholders
   :Termdebug ./a.out          gdb in vim
 gdb
