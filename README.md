@@ -1,7 +1,7 @@
 # EPITA PIE starter kit
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/config/master/pie/setup.sh | sh
+curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/master/setup.sh | sh
 ```
 
 Log out, log in: done, on every PIE machine on every campus, forever.

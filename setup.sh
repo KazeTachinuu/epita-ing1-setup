@@ -1,7 +1,7 @@
 #!/bin/sh
 # EPITA PIE full setup in one line:
 #
-#   curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/config/master/pie/setup.sh | sh
+#   curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/master/setup.sh | sh
 #
 # Installs everything into ~/afs/.confs (vim + LSP, bash, gdb, tmux,
 # readline, alacritty, checksum-verified starship); the PIE then reapplies
@@ -14,7 +14,7 @@ set -e
 # configs are fetched from a pinned commit, not a mutable branch: the
 # bytes you get are exactly the bytes reviewed at release time
 PIN=8f6ce32d1c1a29688095a54040121a80a03a45c9
-BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/config/$PIN/pie}"
+BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 DOT="$HOME/afs/.confs"
 
 # colors only on a real terminal, and never when NO_COLOR is set
@@ -39,7 +39,7 @@ mkdir -p "$DOT"
 cd "$DOT"
 
 say "fetching configs -> $DOT"
-for f in install.sh vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
+for f in install.sh clang-format vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
     curl -fsSL "$BASE/$f" -o "$f"
 done
 chmod +x install.sh
