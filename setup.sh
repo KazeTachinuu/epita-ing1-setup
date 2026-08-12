@@ -12,7 +12,7 @@ set -eu
 
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
-PIN=188ef04e2dcb8cd3fd016a715eab15e5f56f6c98
+PIN=cc1eabaf0b7f4d43eeac57c8f7460a5c07bf4701
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 DOT="$HOME/afs/.confs"
 FILES="install.sh clang-format starship.toml vimrc vimrc.exam bashrc
