@@ -13,7 +13,7 @@
 set -e
 # configs are fetched from a pinned commit, not a mutable branch: the
 # bytes you get are exactly the bytes reviewed at release time
-PIN=8f6ce32d1c1a29688095a54040121a80a03a45c9
+PIN=29759913ed9fbe6ffdc4c4251913d2372db0dafc
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 DOT="$HOME/afs/.confs"
 
