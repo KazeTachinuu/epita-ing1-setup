@@ -20,6 +20,7 @@ vim
   Ctrl-N                      file tree
   Space m / n / p             make / next / prev error
   gd gr K Space r             definition, references, docs, rename
+  Space a                     apply the "fix available" (code action)
   main<Tab>                   snippet; Tab jumps placeholders
   :Termdebug ./a.out          gdb in vim
 gdb

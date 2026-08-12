@@ -128,4 +128,5 @@ autocmd pie User LspSetup call LspAddServer([{
 autocmd pie User LspAttached nnoremap <buffer> gd :LspGotoDefinition<CR>
 autocmd pie User LspAttached nnoremap <buffer> gr :LspShowReferences<CR>
 autocmd pie User LspAttached nnoremap <buffer> <leader>r :LspRename<CR>
+autocmd pie User LspAttached nnoremap <buffer> <leader>a :LspCodeAction<CR>
 autocmd pie User LspAttached nnoremap <buffer> K :LspHover<CR>
