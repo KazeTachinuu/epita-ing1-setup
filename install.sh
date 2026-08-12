@@ -34,7 +34,10 @@ link vim
 # Backgrounded and silent: a login must never wait on the network.
 if command -v git >/dev/null 2>&1; then
     (
-        export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)}"
+        # the PIE image ships CA certs only in the nix store; on machines
+        # with a normal cert setup the glob misses and git's default works
+        ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
+        [ -e "$ca" ] && export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$ca}"
         for entry in \
             "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
             "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
