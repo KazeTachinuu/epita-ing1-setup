@@ -88,6 +88,7 @@ cmd_vm() { ## boot the REAL PIE (QEMU/KVM) in a window; close the window to shut
         -v "/tmp/.X11-unix/X${PIE_DISPLAY#:}:/tmp/.X11-unix/X${PIE_DISPLAY#:}" \
         -e DISPLAY="$PIE_DISPLAY" \
         -e QEMU_OPTS="-vga virtio -qmp unix:/nix/vm-state/qmp.sock,server=on,wait=off -display gtk -chardev qemu-vdagent,id=vdagent,name=vdagent,clipboard=on -device virtio-serial-pci -device virtserialport,chardev=vdagent,name=com.redhat.spice.0" \
+        -e QEMU_KERNEL_PARAMS="video=$PIE_RES" \
         "$PIE_IMG" \
         sh -c 'mkdir -p /tmp /nix/vm-state && chmod 1777 /tmp; cd /nix/vm-state
                exec /nix/vm-result/bin/run-nixos-pie-vm -m 6144 -smp 4' >/dev/null
