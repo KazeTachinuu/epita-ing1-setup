@@ -26,6 +26,10 @@ STARSHIP_SHA=b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3
 FZF_V=0.74.2
 FZF_SHA=b3648f48675612b69ee35371cf6dc99ca96d767e89b912d079080916ac8ba8bd
 FZF_KB_SHA=89103adb2e29816b0ed8f36814ce4c95945a5f1c7dcd3b0620d2973ea2dbd6ea
+RG_V=15.2.0
+RG_SHA=33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c
+FD_V=10.4.2
+FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
 GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
 
@@ -72,40 +76,44 @@ AFS_DIR="$AFS" ./install.sh
 # the extras below are loaded by inert hooks (bashrc, gdbinit) only when
 # present; each one skips on failure, the kit works without any of them
 
-# starship: pinned static binary, checksum-verified
-if ! extras; then :
-elif [ -x bin/starship ]; then
-    skip "starship: already installed ($(bin/starship --version 2>/dev/null | head -1 || echo unknown))"
-else
-    say "starship: fetching v$STARSHIP_V (checksum-verified)"
-    if curl -fsSL -o .new.starship.tgz \
-        "https://github.com/starship/starship/releases/download/v$STARSHIP_V/starship-x86_64-unknown-linux-musl.tar.gz" \
-        && verified .new.starship.tgz "$STARSHIP_SHA" \
-        && mkdir -p .new.bin && tar xzf .new.starship.tgz -C .new.bin; then
-        mkdir -p bin && mv .new.bin/starship bin/starship
-    else
-        warn "starship: fetch or checksum failed, skipped"
+# fetch_bin <bin> <version> <url> <sha> <path-in-tar>: pinned static
+# binary, checksum-verified, atomically placed in bin/
+fetch_bin() {
+    extras || return 0
+    if [ -x "bin/$1" ]; then
+        skip "$1: already installed ($("bin/$1" --version 2>/dev/null | head -1 || echo unknown))"
+        return 0
     fi
-fi
+    say "$1: fetching $2 (checksum-verified)"
+    if curl -fsSL -o ".new.$1.tgz" "$3" && verified ".new.$1.tgz" "$4" \
+        && mkdir -p ".new.$1" bin && tar xzf ".new.$1.tgz" -C ".new.$1"; then
+        mv ".new.$1/$5" "bin/$1"
+    else
+        warn "$1: fetch or checksum failed, skipped"
+    fi
+}
 
-# fzf: pinned static binary + its bash key bindings (fuzzy Ctrl-R
-# history, Ctrl-T files), both checksum-verified
-if ! extras; then :
-elif [ -x bin/fzf ] && [ -r fzf-key-bindings.bash ]; then
-    skip "fzf: already installed ($(bin/fzf --version 2>/dev/null || echo unknown))"
-else
-    say "fzf: fetching v$FZF_V (checksum-verified)"
-    if curl -fsSL -o .new.fzf.tgz \
-        "https://github.com/junegunn/fzf/releases/download/v$FZF_V/fzf-$FZF_V-linux_amd64.tar.gz" \
-        && verified .new.fzf.tgz "$FZF_SHA" \
-        && curl -fsSL -o .new.fzf-kb.bash \
+fetch_bin starship "v$STARSHIP_V" \
+    "https://github.com/starship/starship/releases/download/v$STARSHIP_V/starship-x86_64-unknown-linux-musl.tar.gz" \
+    "$STARSHIP_SHA" starship
+fetch_bin fzf "v$FZF_V" \
+    "https://github.com/junegunn/fzf/releases/download/v$FZF_V/fzf-$FZF_V-linux_amd64.tar.gz" \
+    "$FZF_SHA" fzf
+fetch_bin rg "v$RG_V (ripgrep)" \
+    "https://github.com/BurntSushi/ripgrep/releases/download/$RG_V/ripgrep-$RG_V-x86_64-unknown-linux-musl.tar.gz" \
+    "$RG_SHA" "ripgrep-$RG_V-x86_64-unknown-linux-musl/rg"
+fetch_bin fd "v$FD_V" \
+    "https://github.com/sharkdp/fd/releases/download/v$FD_V/fd-v$FD_V-x86_64-unknown-linux-musl.tar.gz" \
+    "$FD_SHA" "fd-v$FD_V-x86_64-unknown-linux-musl/fd"
+
+# fzf's bash key bindings (fuzzy Ctrl-R history, Ctrl-T files)
+if extras && [ -x bin/fzf ] && [ ! -r fzf-key-bindings.bash ]; then
+    if curl -fsSL -o .new.fzf-kb.bash \
         "https://raw.githubusercontent.com/junegunn/fzf/v$FZF_V/shell/key-bindings.bash" \
-        && verified .new.fzf-kb.bash "$FZF_KB_SHA" \
-        && mkdir -p .new.bin bin && tar xzf .new.fzf.tgz -C .new.bin; then
-        mv .new.bin/fzf bin/fzf
+        && verified .new.fzf-kb.bash "$FZF_KB_SHA"; then
         mv .new.fzf-kb.bash fzf-key-bindings.bash
     else
-        warn "fzf: fetch or checksum failed, skipped"
+        warn "fzf key bindings: fetch or checksum failed, skipped"
     fi
 fi
 

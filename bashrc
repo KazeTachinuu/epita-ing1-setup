@@ -49,4 +49,8 @@ cctest() { gcc -std=c99 -Wall -Wextra -Werror -g3 "$@" -lcriterion; }
 command -v starship >/dev/null && eval "$(starship init bash)"
 command -v fzf >/dev/null && [ -r ~/afs/.confs/fzf-key-bindings.bash ] \
     && . ~/afs/.confs/fzf-key-bindings.bash
+# fd makes Ctrl-T/fzf respect .gitignore and skip build dirs
+command -v fd >/dev/null \
+    && export FZF_DEFAULT_COMMAND='fd --type f' \
+              FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
 [ -r ~/afs/.confs/blesh/ble.sh ] && . ~/afs/.confs/blesh/ble.sh

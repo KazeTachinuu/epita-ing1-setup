@@ -19,7 +19,7 @@ Log out, log back in. Re-run any time to update.
   moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion
 - **gdb**: history, pretty-print, and GEF (pinned, checksum-verified)
 - **readline**: prefix history search on the arrows, colored menu completion
-  plus fzf: fuzzy `Ctrl-R` history and `Ctrl-T` file search (verified)
+  plus fzf (fuzzy `Ctrl-R` history, `Ctrl-T` files), fd and ripgrep
 - **tmux**, **alacritty**, **starship** with my prompt
   config (`PIE_MINIMAL=1` skips starship, fzf and GEF)
 
@@ -56,4 +56,9 @@ Needs docker, bats, and the nixos-pie image:
 | `bats test.bats` | the kit applies, and can never break a login |
 
 The harness replays the real login path from nixpie's PAM hook.
+
+Clipboard and the VM: host to VM needs nothing (`paste`). VM to host
+(yank out of the VM) additionally needs the guest agent:
+`nix profile install nixpkgs#spice-vdagent`, then as root
+`spice-vdagentd` and `spice-vdagent`.
 
