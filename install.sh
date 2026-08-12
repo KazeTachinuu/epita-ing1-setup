@@ -57,6 +57,7 @@ fi
 mkdir -p "$HOME/.config/tmux" "$HOME/.config/alacritty" 2>/dev/null
 [ -e "$DOT/tmux.conf" ] && ln -sfn "$DOT/tmux.conf" "$HOME/.config/tmux/tmux.conf"
 [ -e "$DOT/alacritty.toml" ] && ln -sfn "$DOT/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
+[ -e "$DOT/starship.toml" ] && ln -sfn "$DOT/starship.toml" "$HOME/.config/starship.toml"
 
 # Optional normal-day extras (opt in: touch $DOT/nix-extras).
 # Backgrounded and silent: must never delay or fail a login.

@@ -39,7 +39,7 @@ mkdir -p "$DOT"
 cd "$DOT"
 
 say "fetching configs -> $DOT"
-for f in install.sh clang-format vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
+for f in install.sh clang-format starship.toml vimrc vimrc.exam bashrc gdbinit inputrc tmux.conf alacritty.toml; do
     curl -fsSL "$BASE/$f" -o "$f"
 done
 chmod +x install.sh
@@ -57,6 +57,18 @@ if [ "${PIE_MINIMAL:-0}" != 1 ] && [ ! -x bin/starship ]; then
         warn "starship checksum mismatch, skipping (kit works without it)"
     fi
     rm -f /tmp/starship.tgz
+fi
+
+# GEF: pinned release, checksum-verified; gdbinit loads it only if present
+GEF_V=2026.01
+GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
+if [ "${PIE_MINIMAL:-0}" != 1 ] && [ ! -e gef.py ]; then
+    say "fetching GEF $GEF_V (verified)"
+    curl -fsSL "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" -o gef.py
+    if ! printf '%s  gef.py\n' "$GEF_SHA" | sha256sum -c - >/dev/null 2>&1; then
+        warn "GEF checksum mismatch, skipping (gdb works without it)"
+        rm -f gef.py
+    fi
 fi
 
 say "running install.sh (links configs, clones vim plugins in background)"

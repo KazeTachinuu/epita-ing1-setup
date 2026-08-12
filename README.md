@@ -1,21 +1,34 @@
-# EPITA PIE starter kit
+# epita-ing1-setup
+
+Dev environment for the EPITA PIE. The PIE wipes your home every session
+but runs `~/afs/.confs/install.sh` at each login; this kit lives there
+and re-links itself, so it follows you to every machine on every campus.
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/master/setup.sh | sh
 ```
 
-Log out, log in: done, on every PIE machine on every campus, forever.
-Re-run any time to update.
+Log out, log back in. Re-run any time to update.
 
-You get vim (clangd LSP, auto-pairs, snippets, format-on-save), bash
-(`cc99` / `ccsan` moulinette-flag aliases, `cctest`, git prompt), gdb,
-tmux, readline and a starship prompt (`PIE_MINIMAL=1` skips it). It
-survives the session wipe because the PIE runs `~/afs/.confs/install.sh`
-at every login.
+![vim with clangd LSP on the PIE](docs/pie.png)
+
+- **vim**: clangd LSP (goto-def, references, rename, diagnostics,
+  completion), auto-pairs, snippets, format-on-save with the moulinette's
+  `.clang-format`
+- **bash**: git-aware prompt, `cc99` / `ccsan` aliases with the
+  moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion
+- **gdb**: history, pretty-print, and GEF (pinned, checksum-verified)
+- **tmux**, **readline**, **alacritty**, **starship** with my prompt
+  config (`PIE_MINIMAL=1` skips starship and GEF)
+
+Configs are fetched from a pinned commit and starship is
+checksum-verified: what you run is what was reviewed.
 
 ## Exams
 
-No AFS, no network, nothing installed. Memorize 3 lines, line 1 first:
+Exam machines have no AFS and no network; nothing above exists there.
+Memorize 3 lines (`vimrc.exam`), line 1 first: writing any `~/.vimrc`
+disables the built-in `defaults.vim`, and line 1 turns it back on.
 
 ```vim
 source $VIMRUNTIME/defaults.vim
@@ -25,15 +38,18 @@ set hls ic scs cb=unnamedplus
 
 Practice on the real image: `./harness.sh exam`
 
-## Hacking on the kit
+## Development
 
-Needs docker, bats, and the nixos-pie image
-(`nix build github:epita/nixpie#nixos-pie-docker`, then `docker load`).
+Needs docker, bats, and the nixos-pie image:
+`nix build github:epita/nixpie#nixos-pie-docker`, then `docker load`.
 
-```sh
-./harness.sh login   # simulated PIE login, kit applied
-./harness.sh exam    # stock exam machine
-./harness.sh gui     # full i3 session in a window
-./harness.sh vm      # boot the real PIE in QEMU/KVM
-bats test.bats
-```
+| command | what it does |
+|---|---|
+| `./harness.sh login` | PIE shell, kit applied |
+| `./harness.sh exam` | stock exam machine |
+| `./harness.sh gui` | full i3 desktop in a window |
+| `./harness.sh vm` | boot the real PIE in QEMU/KVM |
+| `./harness.sh reset` | wipe the fake AFS |
+| `bats test.bats` | the kit applies, and can never break a login |
+
+The harness replays the real login path from nixpie's PAM hook.
