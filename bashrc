@@ -78,8 +78,21 @@ command -v fd >/dev/null \
     && export FZF_DEFAULT_COMMAND='fd --type f' \
               FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
 
-# `kit` shows what the kit gives you and why; hinted once per session
-kit() { cat ~/afs/.confs/cheatsheet 2>/dev/null || echo "kit: not installed"; }
+# `kit` shows what the kit gives you; hinted once per session
+kit() {
+    local f=~/afs/.confs/cheatsheet
+    [ -r "$f" ] || { echo 'kit: not installed'; return 1; }
+    if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+        awk 'NR==1      { printf "\033[1m%s\033[0m\n", $0; next }
+             /^exams/   { printf "\033[2m%s\033[0m\n", $0; next }
+             /^[a-z0-9]/{ printf "\033[1;34m%s\033[0m\n", $0; next }
+             /^  \S/    { printf "  \033[36m%-26s\033[0m\033[2m%s\033[0m\n",
+                                 substr($0, 3, 26), substr($0, 31); next }
+             { print }' "$f"
+    else
+        cat "$f"
+    fi
+}
 if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] && [ ! -e /tmp/.kit-hint ]; then
     touch /tmp/.kit-hint 2>/dev/null
     printf '\e[2mkit: type "kit" for the cheatsheet\e[0m\n'
