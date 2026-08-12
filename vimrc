@@ -28,6 +28,11 @@ set hidden                             " switch buffers without saving first
 set autoread                           " pick up external file changes
 set ttimeoutlen=50                     " snappy Esc
 set clipboard=unnamedplus              " y/p use the system clipboard
+" the PIE runs no clipboard manager, so the X clipboard dies with vim
+" (freedesktop SAVE_TARGETS, which vim never implemented): on exit, hand
+" the last yank to xsel, which outlives vim and keeps it pasteable
+autocmd pie VimLeave * if !empty($DISPLAY) && !empty(getreg('+'))
+    \ | silent! call system('xsel -ib', getreg('+')) | endif
 
 " ---- colors ----------------------------------------------------------------
 set termguicolors background=dark
