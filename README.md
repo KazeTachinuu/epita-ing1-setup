@@ -42,28 +42,3 @@ set nu et sw=4 sts=4 cc=80
 set hls ic scs cb=unnamedplus
 ```
 
-Practice on the real image: `./harness.sh exam`
-
-## Development
-
-Needs docker, bats, and the nixos-pie image:
-`nix build github:epita/nixpie#nixos-pie-docker`, then `docker load`.
-
-| command | what it does |
-|---|---|
-| `./harness.sh login` | PIE shell, kit applied |
-| `./harness.sh exam` | stock exam machine |
-| `./harness.sh gui` | full i3 desktop in a window |
-| `./harness.sh vm` | boot the real PIE in a window; close it to shut down |
-| `./harness.sh paste` | type the host clipboard into the running VM |
-| `./harness.sh reset` | wipe the fake AFS |
-| `./harness.sh vmreset` | wipe the VM disk, keep the VM image |
-| `bats test.bats` | the kit applies, and can never break a login |
-
-The harness replays the real login path from nixpie's PAM hook.
-
-Clipboard and the VM: host to VM needs nothing (`paste`). VM to host
-(yank out of the VM) additionally needs the guest agent:
-`nix profile install nixpkgs#spice-vdagent`, then as root
-`spice-vdagentd` and `spice-vdagent`.
-
