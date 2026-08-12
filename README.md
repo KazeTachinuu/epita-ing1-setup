@@ -13,7 +13,7 @@ Log out, log back in. Re-run any time to update.
 ![vim with clangd LSP on the PIE](docs/pie.png)
 
 - **vim**: clangd LSP (goto-def, references, rename, diagnostics,
-  completion), auto-pairs, snippets, format-on-save with the moulinette's
+  completion), auto-pairs, snippets (`main<Tab>`, `for<Tab>`...), format-on-save with the moulinette's
   `.clang-format`
 - **bash**: git-aware prompt, `cc99` / `ccsan` aliases with the
   moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion

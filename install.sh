@@ -42,6 +42,7 @@ if command -v git >/dev/null 2>&1; then
             "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
             "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
             "hrsh7th/vim-vsnip 9bcfabea653abdcdac584283b5097c3f8760abaa" \
+            "rafamadriz/friendly-snippets 6cd7280adead7f586db6fccbd15d2cac7e2188b9" \
             "rhysd/vim-clang-format 6b791825ff478061ad1c57b21bb1ed5a5fd0eb29"
         do
             repo=${entry% *}; pin=${entry#* }

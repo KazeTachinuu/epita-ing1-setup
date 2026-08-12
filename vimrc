@@ -112,9 +112,11 @@ runtime ftplugin/man.vim               " :Man malloc (K also works bare)
 autocmd pie User LspSetup call LspOptionsSet(extend(
     \ {'semanticHighlight': v:true},
     \ exists(':VsnipOpen') == 2 ? {'snippetSupport': v:true, 'vsnipSupport': v:true} : {}))
+" Tab expands a snippet at the cursor (main, for, if... from
+" friendly-snippets), else jumps to the next placeholder, else is a Tab.
 autocmd pie VimEnter * if exists(':VsnipOpen') == 2
-    \ | imap <expr> <Tab>   vsnip#jumpable(1)  ? '<Plug>(vsnip-jump-next)' : '<Tab>'
-    \ | smap <expr> <Tab>   vsnip#jumpable(1)  ? '<Plug>(vsnip-jump-next)' : '<Tab>'
+    \ | imap <expr> <Tab>   vsnip#expandable() ? '<Plug>(vsnip-expand)' : vsnip#jumpable(1) ? '<Plug>(vsnip-jump-next)' : '<Tab>'
+    \ | smap <expr> <Tab>   vsnip#expandable() ? '<Plug>(vsnip-expand)' : vsnip#jumpable(1) ? '<Plug>(vsnip-jump-next)' : '<Tab>'
     \ | imap <expr> <S-Tab> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<S-Tab>'
     \ | smap <expr> <S-Tab> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<S-Tab>'
     \ | endif
