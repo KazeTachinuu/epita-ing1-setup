@@ -6,6 +6,7 @@ compile
   cctest test.c str.c         criterion suite -> ./a.out
 style
   clang-format -i *.c         apply the graded style (vim formats C on save)
+  coding-style-check .        style linter: 54 rules clang-format cannot check
 submit
   gp                          git push --follow-tags
 search

@@ -6,7 +6,7 @@
 # Everything installs to ~/afs/.confs; the PIE reapplies it at every
 # login on every machine. Idempotent, safe to re-run.
 #
-#   PIE_MINIMAL=1  configs only, skip the downloads (starship, fzf, GEF)
+#   PIE_MINIMAL=1  configs only, skip all optional downloads
 #   PIE_BASE=url   fetch configs from another location (testing)
 #   AFS_DIR=path   AFS user dir (default ~/afs; the same variable the
 #                  PIE's PAM hook passes to install.sh at every login)
@@ -32,6 +32,7 @@ FD_V=10.4.2
 FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
 GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
+ECS_V=2.0.0
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' D='\033[2m' N='\033[0m'
@@ -128,6 +129,26 @@ else
         mv .new.gef.py gef.py
     else
         warn "GEF: fetch or checksum failed, skipped"
+    fi
+fi
+
+# epita-coding-style: 54-rule AST linter for the graded style. Python
+# package, pinned version; integrity rests on PyPI over TLS (pip
+# resolves dependencies, so there is no single artifact to checksum).
+if ! extras; then :
+elif [ -x bin/coding-style-check ]; then
+    skip "coding-style-check: already installed"
+else
+    say "coding-style-check: fetching epita-coding-style $ECS_V (PyPI, pinned)"
+    ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
+    [ -e "$ca" ] && export PIP_CERT="$ca" SSL_CERT_FILE="$ca"
+    if python3 -m pip install -q --target .new.pylib "epita-coding-style==$ECS_V" 2>/dev/null; then
+        rm -rf pylib && mv .new.pylib pylib && mkdir -p bin
+        printf '#!/bin/sh\nexport PYTHONPATH="$HOME/afs/.confs/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "$HOME/afs/.confs/pylib/bin/coding-style-check" "$@"\n' \
+            > bin/coding-style-check
+        chmod +x bin/coding-style-check
+    else
+        warn "coding-style-check: pip install failed, skipped"
     fi
 fi
 
