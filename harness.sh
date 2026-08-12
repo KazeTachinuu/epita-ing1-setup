@@ -15,7 +15,7 @@ set -eu
 : "${PIE_VOL:=pie-afs}"                              # volume acting as the AFS user dir
 : "${PIE_LOGIN:=test.user}"                          # simulated student login
 : "${PIE_KIT:=$(dirname "$(realpath "$0")")}"        # config dir seeded into the AFS
-: "${PIE_RES:=1600x900}"                            # gui window size (WxH)
+: "${PIE_RES:=1920x1080}"                            # gui window size (WxH)
 : "${PIE_DISPLAY:=:9}"                               # X display for gui sessions
 
 # real AFS layout: /afs/cri.epita.fr/user/<x>/<xx>/<login>/u
