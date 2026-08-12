@@ -46,11 +46,8 @@ set hlsearch ignorecase smartcase      " highlight all; smart casing
 nnoremap <silent> <Esc><Esc> :nohlsearch<CR>
 
 " ---- files: undo yes, clutter no -------------------------------------------
-set undofile                           " undo history survives closing files
-if !isdirectory($HOME . '/.vim/undo')
-  call mkdir($HOME . '/.vim/undo', 'p')
-endif
-set undodir=~/.vim/undo//
+set undofile undodir=~/.vim/undo//     " undo history survives closing files
+silent! call mkdir($HOME . '/.vim/undo', 'p')
 set nowritebackup noswapfile           " no *~ and .swp litter in repos
 
 " ---- movement --------------------------------------------------------------
@@ -60,7 +57,7 @@ nnoremap <Down> gj
 nnoremap <Up> gk
 inoremap <Down> <C-o>gj
 inoremap <Up> <C-o>gk
-"" half-page jumps and search hits keep the cursor centered
+" half-page jumps and search hits keep the cursor centered
 nnoremap <C-d> <C-d>zz
 nnoremap <C-u> <C-u>zz
 nnoremap n nzzzv
