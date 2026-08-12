@@ -6,7 +6,7 @@
 # Everything installs to ~/afs/.confs; the PIE reapplies it at every
 # login on every machine. Idempotent, safe to re-run.
 #
-#   PIE_MINIMAL=1  configs only, skip the downloads (starship, ble.sh, GEF)
+#   PIE_MINIMAL=1  configs only, skip the downloads (starship, GEF)
 #   PIE_BASE=url   fetch configs from another location (testing)
 #   AFS_DIR=path   AFS user dir (default ~/afs; the same variable the
 #                  PIE's PAM hook passes to install.sh at every login)
@@ -85,21 +85,6 @@ else
     fi
 fi
 
-# ble.sh: nightly is the only build for bash 5.3 and ships no stable
-# checksum upstream, so this one cannot be pinned
-if ! extras; then :
-elif [ -r blesh/ble.sh ]; then
-    skip "ble.sh: already installed"
-else
-    say "ble.sh: fetching nightly (unpinned: no stable checksum upstream)"
-    if mkdir -p .new.blesh && curl -fsSL \
-        https://github.com/akinomyoga/ble.sh/releases/download/nightly/ble-nightly.tar.xz \
-        | tar xJ -C .new.blesh --strip-components=1; then
-        rm -rf blesh && mv .new.blesh blesh
-    else
-        warn "ble.sh: fetch failed, skipped"
-    fi
-fi
 
 # GEF: pinned release, checksum-verified
 if ! extras; then :

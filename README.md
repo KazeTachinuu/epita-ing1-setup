@@ -18,9 +18,10 @@ Log out, log back in. Re-run any time to update.
 - **bash**: git-aware prompt, `cc99` / `ccsan` aliases with the
   moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion
 - **gdb**: history, pretty-print, and GEF (pinned, checksum-verified)
-- **bash extras**: ble.sh autosuggestions and syntax highlighting
-- **tmux**, **readline**, **alacritty**, **starship** with my prompt
-  config (`PIE_MINIMAL=1` skips starship, ble.sh and GEF)
+- **readline**: prefix history search on the arrows, colored menu completion
+  (fzf fuzzy history is one `touch ~/afs/.confs/nix-extras` away)
+- **tmux**, **alacritty**, **starship** with my prompt
+  config (`PIE_MINIMAL=1` skips starship and GEF)
 
 Configs are fetched from a pinned commit and starship is
 checksum-verified: what you run is what was reviewed.
