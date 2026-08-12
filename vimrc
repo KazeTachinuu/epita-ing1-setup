@@ -112,7 +112,7 @@ runtime ftplugin/man.vim               " :Man malloc (K also works bare)
 " Snippet support (function-argument placeholders) lights up when vsnip is
 " present; Tab jumps between placeholders.
 autocmd pie User LspSetup call LspOptionsSet(extend(
-    \ {'semanticHighlight': v:true},
+    \ {'semanticHighlight': v:true, 'showDiagWithVirtualText': v:true},
     \ exists(':VsnipOpen') == 2 ? {'snippetSupport': v:true, 'vsnipSupport': v:true} : {}))
 " Tab expands a snippet at the cursor (main, for, if... from
 " friendly-snippets), else jumps to the next placeholder, else is a Tab.
