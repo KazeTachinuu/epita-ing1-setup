@@ -8,13 +8,16 @@
 #
 #   PIE_MINIMAL=1  configs only, skip the downloads (starship, ble.sh, GEF)
 #   PIE_BASE=url   fetch configs from another location (testing)
+#   AFS_DIR=path   AFS user dir (default ~/afs; the same variable the
+#                  PIE's PAM hook passes to install.sh at every login)
 set -eu
 
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
 PIN=cc1eabaf0b7f4d43eeac57c8f7460a5c07bf4701
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
-DOT="$HOME/afs/.confs"
+AFS="${AFS_DIR:-$HOME/afs}"
+DOT="$AFS/.confs"
 FILES="install.sh clang-format starship.toml vimrc vimrc.exam bashrc
        gdbinit inputrc tmux.conf alacritty.toml"
 
@@ -38,9 +41,9 @@ printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
 # no AFS here (VM, standalone machine): a dangling ~/afs symlink becomes
 # a real local directory so the same paths work everywhere
-if [ -L "$HOME/afs" ] && [ ! -e "$HOME/afs" ]; then
-    say "no AFS mounted: using a local ~/afs directory instead"
-    rm "$HOME/afs"
+if [ -L "$AFS" ] && [ ! -e "$AFS" ]; then
+    say "no AFS mounted: using a local $AFS directory instead"
+    rm "$AFS"
 fi
 mkdir -p "$DOT"
 cd "$DOT"
@@ -61,7 +64,7 @@ chmod +x install.sh
 # must never leave configs fetched but not installed
 say "configs: linked into \$HOME (install.sh; vim plugins clone in background)"
 
-AFS_DIR="$HOME/afs" ./install.sh
+AFS_DIR="$AFS" ./install.sh
 
 # the extras below are loaded by inert hooks (bashrc, gdbinit) only when
 # present; each one skips on failure, the kit works without any of them
