@@ -32,6 +32,6 @@ i3 (stock, identical on exams)
   Super+Enter / Super+d       terminal / launcher
   Super+1..9                  workspaces
   Super+Shift+q               close window
-  i3lock -c 000000            lock when you leave (pranks target unlocked seats)
+  i3lock                      lock when you leave (white screen = locked, not frozen)
 
 exams: no AFS, kit tools absent; memorize vimrc.exam (3 lines)
