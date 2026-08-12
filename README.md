@@ -50,15 +50,9 @@ Needs docker, bats, and the nixos-pie image:
 | `./harness.sh exam` | stock exam machine |
 | `./harness.sh gui` | full i3 desktop in a window |
 | `./harness.sh vm` | boot the real PIE in QEMU/KVM |
+| `./harness.sh paste` | type the host clipboard into the running VM |
 | `./harness.sh reset` | wipe the fake AFS |
 | `bats test.bats` | the kit applies, and can never break a login |
 
 The harness replays the real login path from nixpie's PAM hook.
 
-VM clipboard: the harness exposes a qemu-vdagent channel; the guest half
-needs spice-vdagent running inside the VM (root for the daemon):
-
-```sh
-nix profile install nixpkgs#spice-vdagent
-sudo spice-vdagentd && spice-vdagent
-```

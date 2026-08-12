@@ -81,18 +81,61 @@ cmd_vm() { ## boot the REAL PIE (QEMU/KVM): SDDM, PAM, systemd - top fidelity
     trap 'kill $! 2>/dev/null' EXIT
     sleep 1
     info "booting nixos-pie VM (state persists in the nixpie-vm volume)"
-    info "clipboard: needs spice-vdagent in the guest (see README)"
+    info "paste host clipboard into the VM: $0 paste (from another terminal)"
     if [ -t 0 ]; then _tty=-it; else _tty=-i; fi
-    # qemu-vdagent gives host<->guest clipboard through the GTK display,
-    # provided the guest runs spice-vdagent (inert otherwise)
-    docker run --rm $_tty --device /dev/kvm \
+    # the QMP socket lets `paste` type the host clipboard into the guest
+    docker run --rm $_tty --name pie-vm --device /dev/kvm \
         -v nixpie-vm:/nix -w /nix \
         -v "/tmp/.X11-unix/X${PIE_DISPLAY#:}:/tmp/.X11-unix/X${PIE_DISPLAY#:}" \
         -e DISPLAY="$PIE_DISPLAY" \
-        -e QEMU_OPTS="-display gtk -chardev qemu-vdagent,id=vdagent,name=vdagent,clipboard=on -device virtio-serial-pci -device virtserialport,chardev=vdagent,name=com.redhat.spice.0" \
+        -e QEMU_OPTS="-qmp unix:/nix/vm-state/qmp.sock,server=on,wait=off" \
         "$PIE_IMG" \
         sh -c 'mkdir -p /tmp /nix/vm-state && chmod 1777 /tmp; cd /nix/vm-state
                exec /nix/vm-result/bin/run-nixos-pie-vm -m 6144 -smp 4'
+}
+
+cmd_paste() { ## type the host clipboard into the running VM (us layout)
+    text=$(wl-paste -n 2>/dev/null || xclip -selection clipboard -o 2>/dev/null) \
+        || { err "no clipboard tool (wl-paste/xclip) or empty clipboard"; exit 1; }
+    docker ps -q -f name=pie-vm | grep -q . || { err "no running VM (start with: $0 vm)"; exit 1; }
+    printf %s "$text" | docker exec -i pie-vm sh -c 'cat > /tmp/.paste'
+    docker exec pie-vm python3 -c '
+import json, socket, string
+
+KEYS = {" ": "spc", "\n": "ret", "\t": "tab", "-": "minus", "=": "equal",
+    "[": "bracket_left", "]": "bracket_right", ";": "semicolon",
+    "\x27": "apostrophe", "`": "grave_accent", "\\": "backslash",
+    ",": "comma", ".": "dot", "/": "slash", "!": "shift-1", "@": "shift-2",
+    "#": "shift-3", "$": "shift-4", "%": "shift-5", "^": "shift-6",
+    "&": "shift-7", "*": "shift-8", "(": "shift-9", ")": "shift-0",
+    "_": "shift-minus", "+": "shift-equal", "{": "shift-bracket_left",
+    "}": "shift-bracket_right", ":": "shift-semicolon",
+    "\"": "shift-apostrophe", "~": "shift-grave_accent",
+    "|": "shift-backslash", "<": "shift-comma", ">": "shift-dot",
+    "?": "shift-slash"}
+KEYS.update({c: c for c in string.ascii_lowercase + string.digits})
+KEYS.update({c: "shift-" + c.lower() for c in string.ascii_uppercase})
+
+s = socket.socket(socket.AF_UNIX)
+s.connect("/nix/vm-state/qmp.sock")
+f = s.makefile("rw")
+
+def cmd(c):
+    f.write(json.dumps(c) + "\n"); f.flush()
+    while True:  # skip async events until our reply
+        r = json.loads(f.readline())
+        if "return" in r or "error" in r:
+            return r
+
+f.readline()  # QMP greeting
+cmd({"execute": "qmp_capabilities"})
+for ch in open("/tmp/.paste").read():
+    k = KEYS.get(ch)
+    if k:
+        cmd({"execute": "human-monitor-command",
+             "arguments": {"command-line": "sendkey " + k + " 8"}})
+'
+    ok "pasted ${#text} characters into the VM"
 }
 
 cmd_exam() { ## config-less machine (approximates exam-pie: same userland, no lockdown)
