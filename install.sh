@@ -20,7 +20,6 @@ link() {
 
 link vimrc
 link bashrc
-link gitconfig
 link clang-format
 link gdbinit
 link inputrc

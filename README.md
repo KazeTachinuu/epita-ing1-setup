@@ -12,19 +12,23 @@ Log out, log back in. Re-run any time to update.
 
 ![vim with clangd LSP on the PIE](docs/pie.png)
 
-- **vim**: clangd LSP (goto-def, references, rename, diagnostics,
-  completion), auto-pairs, snippets (`main<Tab>`, `for<Tab>`...), format-on-save with the moulinette's
-  `.clang-format`
-- **bash**: git-aware prompt, `cc99` / `ccsan` aliases with the
-  moulinette's flags (-Werror, ASAN+UBSAN), `cctest` for criterion
-- **gdb**: history, pretty-print, and GEF (pinned, checksum-verified)
-- **readline**: prefix history search on the arrows, colored menu completion
-  plus fzf (fuzzy `Ctrl-R` history, `Ctrl-T` files), fd and ripgrep
-- **tmux**, **alacritty**, **starship** with my prompt
-  config (`PIE_MINIMAL=1` skips starship, fzf and GEF)
+- **vim**: clangd LSP (definition, references, rename, inline
+  diagnostics, code actions), auto-pairs, snippets (`main<Tab>`),
+  format-on-save with the moulinette's `.clang-format`
+- **bash**: git-aware prompt, `cc99` / `ccsan` with the moulinette's
+  flags (-Werror, ASAN+UBSAN), `cctest` / `cccov` for criterion,
+  `submit <tag>` (clean-tree + format gate, annotated tag, push)
+- **style**: `coding-style-check`, a 54-rule
+  [linter](https://github.com/KazeTachinuu/epita-coding-style) for what
+  clang-format cannot check
+- **gdb**: history, pretty-print, GEF
+- **search**: fzf (fuzzy `Ctrl-R` history, `Ctrl-T` files), fd, ripgrep,
+  readline prefix history search on the arrows
+- **tmux**, **alacritty**, **starship** with my prompt config
+- **`kit`**: one-screen cheatsheet of all of the above
 
-Configs are fetched from a pinned commit and starship is
-checksum-verified: what you run is what was reviewed.
+Configs are fetched from a pinned commit; binaries (starship, fzf, fd,
+rg, GEF) are checksum-verified. `PIE_MINIMAL=1` skips the downloads.
 
 ## From your own machine
 
