@@ -10,7 +10,7 @@ curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/maste
 
 Log out, log back in. Re-run any time to update.
 
-![vim with clangd LSP on the PIE](docs/pie.png)
+![the kit cheatsheet on the PIE](docs/pie.png)
 
 - **vim**: clangd LSP (definition, references, rename, inline
   diagnostics, code actions), auto-pairs, snippets (`main<Tab>`),
