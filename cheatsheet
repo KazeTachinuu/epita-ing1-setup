@@ -1,0 +1,27 @@
+EPITA PIE kit                github.com/KazeTachinuu/epita-ing1-setup
+
+compile
+  cc99 main.c                 moulinette flags (-std=c99 -Wall -Wextra -Werror -pedantic -g3)
+  ccsan main.c                same + ASAN/UBSAN
+  cctest test.c str.c         criterion suite -> ./a.out
+style
+  clang-format -i *.c         apply the graded style (vim formats C on save)
+submit
+  gp                          git push --follow-tags
+search
+  rg word                     grep the repo
+  fd name                     find files
+  Ctrl-R                      fuzzy history
+  Ctrl-T / Alt-C              fuzzy file insert / fuzzy cd
+vim
+  Ctrl-N                      file tree
+  Space m / n / p             make / next / prev error
+  gd gr K Space r             definition, references, docs, rename
+  main<Tab>                   snippet; Tab jumps placeholders
+  :Termdebug ./a.out          gdb in vim
+gdb
+  gdb ./a.out                 GEF loads if installed
+tmux
+  tmux                        mouse on, vi copy mode
+
+exams: no AFS, none of this exists; memorize vimrc.exam (3 lines)

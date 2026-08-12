@@ -18,7 +18,7 @@ PIN=16cff3ba07b369ca133ae79c94420cc3710f7a68
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
 DOT="$AFS/.confs"
-FILES="install.sh clang-format starship.toml vimrc vimrc.exam bashrc
+FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
        gdbinit inputrc tmux.conf alacritty.toml"
 
 STARSHIP_V=1.26.0

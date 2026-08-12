@@ -53,4 +53,10 @@ command -v fzf >/dev/null && [ -r ~/afs/.confs/fzf-key-bindings.bash ] \
 command -v fd >/dev/null \
     && export FZF_DEFAULT_COMMAND='fd --type f' \
               FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
-[ -r ~/afs/.confs/blesh/ble.sh ] && . ~/afs/.confs/blesh/ble.sh
+
+# `kit` shows what the kit gives you and why; hinted once per session
+kit() { cat ~/afs/.confs/cheatsheet 2>/dev/null || echo "kit: not installed"; }
+if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] && [ ! -e /tmp/.kit-hint ]; then
+    touch /tmp/.kit-hint 2>/dev/null
+    printf '\e[2mkit: type "kit" for the cheatsheet\e[0m\n'
+fi
