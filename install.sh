@@ -21,6 +21,7 @@ link() {
 
 link vimrc
 link bashrc
+link gitconfig    # not shipped; linked if the student keeps one on AFS (CRI convention)
 link clang-format
 link gdbinit
 link inputrc
