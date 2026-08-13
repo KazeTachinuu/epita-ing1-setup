@@ -6,10 +6,11 @@
 
 DOT="${AFS_DIR:-$HOME/afs}/.confs"
 
-# link <name>: symlink ~/.<name> -> .confs/<name>, converging in zero work when
-# already correct. A pre-existing real file is kept once as *.local-backup.
+# link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
+# converging in zero work when already correct. A pre-existing real file
+# is kept once as *.local-backup.
 link() {
-    src="$DOT/$1" dst="$HOME/.$1"
+    src="$DOT/$1" dst="${2:-$HOME/.$1}"
     [ -e "$src" ] || return 0
     [ "$(readlink "$dst" 2>/dev/null)" = "$src" ] && return 0
     if [ -e "$dst" ] && [ ! -L "$dst" ]; then
@@ -56,11 +57,11 @@ if command -v git >/dev/null 2>&1; then
     ) >/dev/null 2>&1 &
 fi
 
-# XDG-path configs; link() only handles ~/.<name>
+# XDG-path configs, same backup semantics
 mkdir -p "$HOME/.config/tmux" "$HOME/.config/alacritty" 2>/dev/null
-[ -e "$DOT/tmux.conf" ] && ln -sfn "$DOT/tmux.conf" "$HOME/.config/tmux/tmux.conf"
-[ -e "$DOT/alacritty.toml" ] && ln -sfn "$DOT/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
-[ -e "$DOT/starship.toml" ] && ln -sfn "$DOT/starship.toml" "$HOME/.config/starship.toml"
+link tmux.conf "$HOME/.config/tmux/tmux.conf"
+link alacritty.toml "$HOME/.config/alacritty/alacritty.toml"
+link starship.toml "$HOME/.config/starship.toml"
 
 # Optional normal-day extras (opt in: touch $DOT/nix-extras).
 # Backgrounded and silent: must never delay or fail a login.

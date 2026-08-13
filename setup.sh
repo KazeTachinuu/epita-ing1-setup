@@ -59,6 +59,14 @@ fi
 mkdir -p "$DOT"
 cd "$DOT"
 
+# a pre-existing .confs this kit did not create is copied once to
+# .confs.backup before anything gets overwritten
+if [ ! -e .kit ] && [ -n "$(ls -A . 2>/dev/null)" ] && [ ! -e "$AFS/.confs.backup" ]; then
+    say "existing .confs found: keeping a copy in .confs.backup"
+    cp -a "$DOT" "$AFS/.confs.backup"
+fi
+touch .kit
+
 # every download lands under a temporary name and is moved into place
 # only when complete (and verified); the trap sweeps interrupted leftovers
 trap 'rm -rf "$DOT"/.new.*' EXIT
