@@ -45,6 +45,9 @@ warn()     { printf "${Y}[-]${N} %s\n" "$1"; }
 extras()   { [ "${PIE_MINIMAL:-0}" != 1 ]; }
 verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
 
+# on a terminal, downloads show curl's progress bar (stderr); quiet otherwise
+if [ -t 2 ]; then CURL="curl -f#L"; else CURL="curl -fsSL"; fi
+
 printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
 # no AFS here (VM, standalone machine): a dangling ~/afs symlink becomes
@@ -62,10 +65,14 @@ trap 'rm -rf "$DOT"/.new.*' EXIT
 
 set -- $FILES
 say "configs: fetching $# files -> $DOT"
+i=0
 for f in $FILES; do
+    i=$((i + 1))
+    [ -t 1 ] && printf "\r    ${D}%2d/%d %s${N}\033[K" "$i" "$#" "$f" || true
     curl -fsSL "$BASE/$f" -o ".new.$f"
     mv ".new.$f" "$f"
 done
+[ -t 1 ] && printf '\r\033[K' || true
 chmod +x install.sh
 
 # link configs before the optional downloads: a network failure below
@@ -86,7 +93,7 @@ fetch_bin() {
         return 0
     fi
     say "$1: fetching $2 (checksum-verified)"
-    if curl -fsSL -o ".new.$1.tgz" "$3" && verified ".new.$1.tgz" "$4" \
+    if $CURL -o ".new.$1.tgz" "$3" && verified ".new.$1.tgz" "$4" \
         && mkdir -p ".new.$1" bin && tar xzf ".new.$1.tgz" -C ".new.$1"; then
         mv ".new.$1/$5" "bin/$1"
     else
@@ -124,7 +131,7 @@ elif [ -e gef.py ]; then
     skip "GEF: already installed"
 else
     say "GEF: fetching $GEF_V (checksum-verified)"
-    if curl -fsSL -o .new.gef.py "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" \
+    if $CURL -o .new.gef.py "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" \
         && verified .new.gef.py "$GEF_SHA"; then
         mv .new.gef.py gef.py
     else
@@ -141,8 +148,9 @@ elif [ -x bin/coding-style-check ]; then
 else
     say "coding-style-check: fetching epita-coding-style $ECS_V (PyPI, pinned)"
     ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
-    [ -e "$ca" ] && export PIP_CERT="$ca" SSL_CERT_FILE="$ca"
-    if python3 -m pip install -q --target .new.pylib "epita-coding-style==$ECS_V" 2>/dev/null; then
+    if [ -e "$ca" ]; then export PIP_CERT="$ca" SSL_CERT_FILE="$ca"; fi
+    if [ -t 2 ]; then pipq=; else pipq=-q; fi
+    if python3 -m pip install $pipq --target .new.pylib "epita-coding-style==$ECS_V" 2>/dev/null; then
         rm -rf pylib && mv .new.pylib pylib && mkdir -p bin
         printf '#!/bin/sh\nexport PYTHONPATH="$HOME/afs/.confs/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "$HOME/afs/.confs/pylib/bin/coding-style-check" "$@"\n' \
             > bin/coding-style-check
