@@ -11,6 +11,7 @@ style
 submit
   submit tagname              clean-tree + format gate, annotated tag, push --follow-tags
   gp                          git push --follow-tags
+  ignore                      gitignore school-provided files (parses exercise PDFs)
 search
   rg word                     grep the repo
   fd name                     find files

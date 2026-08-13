@@ -21,6 +21,8 @@ Log out, log back in. Re-run any time to update.
 - **style**: `coding-style-check`, a 54-rule
   [linter](https://github.com/KazeTachinuu/epita-coding-style) for what
   clang-format cannot check
+- **git**: `ignore`, appends school-provided files from exercise PDFs to
+  your `.gitignore` ([epita-gitignore](https://github.com/KazeTachinuu/epita-gitignore))
 - **gdb**: history, pretty-print, GEF
 - **search**: fzf (fuzzy `Ctrl-R` history, `Ctrl-T` files), fd, ripgrep,
   readline prefix history search on the arrows

@@ -33,6 +33,8 @@ FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
 GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
 ECS_V=2.0.0
+IGN_PIN=8c2301c7963954cbe0d9ac82e43702a61c27214d
+IGN_SHA=ccb47065252ba82b7f39540d3a44557aa523afe3bcbf1315b896d36dfdadab37
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' D='\033[2m' N='\033[0m'
@@ -165,6 +167,22 @@ else
         chmod +x bin/coding-style-check
     else
         warn "coding-style-check: pip install failed, skipped"
+    fi
+fi
+
+# ignore: appends school-provided files from exercise PDFs to .gitignore
+# (KazeTachinuu/epita-gitignore, pinned commit, checksum-verified)
+if ! extras; then :
+elif [ -x bin/ignore ]; then
+    skip "ignore: already installed"
+else
+    say "ignore: fetching epita-gitignore @ $(printf %.7s "$IGN_PIN") (checksum-verified)"
+    if $CURL -o .new.ignore \
+        "https://raw.githubusercontent.com/KazeTachinuu/epita-gitignore/$IGN_PIN/ignore.sh" \
+        && verified .new.ignore "$IGN_SHA"; then
+        mkdir -p bin && mv .new.ignore bin/ignore && chmod +x bin/ignore
+    else
+        warn "ignore: fetch or checksum failed, skipped"
     fi
 fi
 
