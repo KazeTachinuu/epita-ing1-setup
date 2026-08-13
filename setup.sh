@@ -50,6 +50,10 @@ verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
 # on a terminal, downloads show curl's progress bar (stderr); quiet otherwise
 if [ -t 2 ]; then CURL="curl -f#L"; else CURL="curl -fsSL"; fi
 
+# everything imperative lives in main, called on the last line: a truncated
+# curl | sh download defines a broken function and executes nothing
+main() {
+
 printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
 # no AFS here (VM, standalone machine): a dangling ~/afs symlink becomes
@@ -187,3 +191,6 @@ else
 fi
 
 printf "${G}==>${N} done. Log out and back in, or run: exec bash\n"
+
+}
+main "$@"
