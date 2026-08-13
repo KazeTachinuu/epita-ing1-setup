@@ -65,11 +65,17 @@ fi
 mkdir -p "$DOT"
 cd "$DOT"
 
-# a pre-existing .confs this kit did not create is copied once to
-# .confs.backup before anything gets overwritten
-if [ ! -e .kit ] && [ -n "$(ls -A . 2>/dev/null)" ] && [ ! -e "$AFS/.confs.backup" ]; then
-    say "existing .confs found: keeping a copy in .confs.backup"
-    cp -a "$DOT" "$AFS/.confs.backup"
+# first run over a .confs this kit did not create: back up only the files
+# we are about to overwrite. A full cp -a of the tree would crawl over
+# sshfs (old vim-plugin .git repos, pylib: thousands of tiny files); their
+# other files are left untouched in place.
+if [ ! -e .kit ] && [ ! -e "$AFS/.confs.backup" ]; then
+    for f in $FILES; do
+        [ -e "$f" ] || continue
+        mkdir -p "$AFS/.confs.backup"
+        cp -a "$f" "$AFS/.confs.backup/"
+    done
+    [ -e "$AFS/.confs.backup" ] && say "existing configs found: kept a copy in .confs.backup"
 fi
 touch .kit
 
