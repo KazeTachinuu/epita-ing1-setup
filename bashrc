@@ -108,19 +108,24 @@ kit() {
     update)
         curl -fsSL "$raw/master/setup.sh" | sh; return ;;
     status)
+        # same markers as setup.sh: [*] info [=] converged [-] warn
+        local B='\033[1;34m' Y='\033[1;33m' D='\033[2m' N='\033[0m'
+        if [ ! -t 1 ] || [ -n "${NO_COLOR:-}" ]; then B= Y= D= N=; fi
         cur=$(cat "$d/.kit" 2>/dev/null)
         if [ -z "$cur" ]; then
-            echo 'kit: version unknown, run: kit update'; return 1
+            printf "${Y}[-]${N} kit: version unknown, run: kit update\n"
+            return 1
         fi
         latest=$(curl -fsSL --max-time 3 "$raw/master/setup.sh" \
                      2>/dev/null | sed -n 's/^PIN=//p')
         if [ -z "$latest" ]; then
-            echo 'kit: offline, cannot check'; return 1
+            printf "${Y}[-]${N} kit: offline, cannot check\n"; return 1
         elif [ "$cur" = "$latest" ]; then
-            printf 'kit: up to date (%.7s)\n' "$cur"
+            printf "${D}[=] kit: up to date (%.7s)${N}\n" "$cur"
         else
-            printf 'kit: update available (%.7s -> %.7s), run: kit update\n' \
+            printf "${B}[*]${N} kit: update available (%.7s -> %.7s)," \
                 "$cur" "$latest"
+            printf " run: kit update\n"
         fi; return ;;
     esac
     [ -r "$f" ] || { echo 'kit: not installed'; return 1; }
