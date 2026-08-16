@@ -31,13 +31,22 @@ mkdir -p "$DOT/vim/pack/kit/start"
 # Over sshfs (the from-home `afs` mount) every one of the ~150 files vim opens
 # at startup is a WAN round-trip: several seconds per launch. There, ~/.vim is
 # materialized as a LOCAL COPY instead of a symlink; the PIE wipes home each
-# session, so the copy is exactly as disposable as the link. `cp -u` makes the
-# converged case metadata-only. On campus (real AFS, LAN-fast): symlink as ever.
+# session, so the copy is exactly as disposable as the link.
+# Even `cp -u` would stat every plugin file over the WAN (~30s per run), so a
+# one-round-trip sentinel guards it: the plugin dir's mtime, recorded in the
+# .kit-copy marker, changes whenever a plugin is added or removed. First copy
+# pays the real transfer once; converged runs cost a single stat.
+# On campus (real AFS, LAN-fast): symlink as ever.
+vim_copy() {
+    stamp=$(stat -c %Y "$DOT/vim/pack/kit/start" 2>/dev/null || echo none)
+    [ "$(cat "$HOME/.vim/.kit-copy" 2>/dev/null)" = "$stamp" ] && return 0
+    cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null
+    echo "$stamp" > "$HOME/.vim/.kit-copy"
+}
 if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
     [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"      # replace a campus symlink
     mkdir -p "$HOME/.vim"
-    cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null || true
-    touch "$HOME/.vim/.kit-copy"                   # mark disposable (see below)
+    vim_copy || true
 else
     # back on campus: drop a marked home-copy, restore the canonical symlink
     [ -e "$HOME/.vim/.kit-copy" ] && rm -rf "$HOME/.vim"
@@ -71,7 +80,7 @@ if command -v git >/dev/null 2>&1; then
         done
         # in copy mode (sshfs), fold freshly cloned plugins into the local
         # ~/.vim now instead of waiting for the next login
-        [ -e "$HOME/.vim/.kit-copy" ] && cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null
+        [ -e "$HOME/.vim/.kit-copy" ] && vim_copy
     ) >/dev/null 2>&1 &
 fi
 
