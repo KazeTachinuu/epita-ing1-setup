@@ -97,11 +97,12 @@ done
 [ -t 1 ] && printf '\r\033[K' || true
 chmod +x install.sh
 
-# link configs before the optional downloads: a network failure below
-# must never leave configs fetched but not installed
-say "configs: installed into \$HOME (install.sh; vim plugins clone in background)"
-
+# install configs before the optional downloads: a network failure below
+# must never leave configs fetched but not installed. Over sshfs the vim
+# copy can take a while, so announce before, confirm after.
+say "configs: installing into \$HOME (vim plugins clone in background)..."
 AFS_DIR="$AFS" ./install.sh
+say "configs: installed"
 
 # the extras below are loaded by inert hooks (bashrc, gdbinit) only when
 # present; each one skips on failure, the kit works without any of them
