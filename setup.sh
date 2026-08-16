@@ -14,7 +14,7 @@ set -eu
 
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
-PIN=f3c216108bcc4066f7e89c951612a16bbaf38a2b
+PIN=859bfb94bc720fec0c0c0d8d4c08bfa19e43f512
 BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
 DOT="$AFS/.confs"
