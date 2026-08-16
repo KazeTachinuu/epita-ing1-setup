@@ -227,7 +227,7 @@ else
     fi
 fi
 
-printf "${G}==>${N} done. Log out and back in, or run: exec bash\n"
+printf "${G}==>${N} done. Run: ${B}exec bash${N}, then type ${B}kit${N} for the cheatsheet\n"
 
 }
 main "$@"
