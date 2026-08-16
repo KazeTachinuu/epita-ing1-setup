@@ -28,15 +28,9 @@ link inputrc
 
 # Plugin layer: ~/.vim lives on AFS; one plugin, native packages, no manager.
 mkdir -p "$DOT/vim/pack/kit/start"
-# Over sshfs (the from-home `afs` mount) every one of the ~150 files vim opens
-# at startup is a WAN round-trip: several seconds per launch. There, ~/.vim is
-# materialized as a LOCAL COPY instead of a symlink; the PIE wipes home each
-# session, so the copy is exactly as disposable as the link.
-# Even `cp -u` would stat every plugin file over the WAN (~30s per run), so a
-# one-round-trip sentinel guards it: the plugin dir's mtime, recorded in the
-# .kit-copy marker, changes whenever a plugin is added or removed. First copy
-# pays the real transfer once; converged runs cost a single stat.
-# On campus (real AFS, LAN-fast): symlink as ever.
+# Over sshfs, vim's ~150 startup opens are WAN round-trips: copy ~/.vim
+# locally instead of linking (home is disposable). The .kit-copy sentinel
+# (plugin dir mtime) keeps converged runs to a single stat.
 vim_copy() {
     stamp=$(stat -c %Y "$DOT/vim/pack/kit/start" 2>/dev/null || echo none)
     [ "$(cat "$HOME/.vim/.kit-copy" 2>/dev/null)" = "$stamp" ] && return 0
@@ -78,8 +72,7 @@ if command -v git >/dev/null 2>&1; then
                 [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
                 rm -rf "$d"
         done
-        # in copy mode (sshfs), fold freshly cloned plugins into the local
-        # ~/.vim now instead of waiting for the next login
+        # copy mode: fold fresh clones into the local ~/.vim now
         [ -e "$HOME/.vim/.kit-copy" ] && vim_copy
     ) >/dev/null 2>&1 &
 fi

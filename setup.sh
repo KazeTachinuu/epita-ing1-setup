@@ -98,8 +98,7 @@ done
 chmod +x install.sh
 
 # install configs before the optional downloads: a network failure below
-# must never leave configs fetched but not installed. Over sshfs the vim
-# copy can take a while, so announce before, confirm after.
+# must never leave configs fetched but not installed
 say "configs: installing into \$HOME (vim plugins clone in background)..."
 AFS_DIR="$AFS" ./install.sh
 say "configs: installed"
