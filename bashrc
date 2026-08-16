@@ -80,13 +80,15 @@ submit() {
 # Optional layers - every line inert unless you installed the thing.
 # nix extras (see install.sh):
 [ -r ~/.nix-profile/share/fzf/key-bindings.bash ] && . ~/.nix-profile/share/fzf/key-bindings.bash
-# AFS-persistent extras (installed by setup.sh):
+# extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus
 [ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
+[ -d ~/.pie/bin ] && PATH="$HOME/.pie/bin:$PATH"
 command -v starship >/dev/null && eval "$(starship init bash)"
 # skipped when the nix-extras copy above already loaded the bindings
-command -v fzf >/dev/null && [ -r ~/afs/.confs/fzf-key-bindings.bash ] \
-    && ! declare -F __fzf_history__ >/dev/null \
-    && . ~/afs/.confs/fzf-key-bindings.bash
+for _kb in ~/.pie/fzf-key-bindings.bash ~/afs/.confs/fzf-key-bindings.bash; do
+    command -v fzf >/dev/null && [ -r "$_kb" ] \
+        && ! declare -F __fzf_history__ >/dev/null && . "$_kb"
+done; unset _kb
 # fd skips .gitignored files and build dirs by default; --type f/d = files/dirs
 # only. DEFAULT_COMMAND feeds bare fzf, CTRL_T the file picker, ALT_C the cd picker.
 command -v fd >/dev/null \

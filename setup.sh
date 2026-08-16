@@ -103,6 +103,18 @@ say "configs: installing into \$HOME (vim plugins clone in background)..."
 AFS_DIR="$AFS" ./install.sh
 say "configs: installed"
 
+# extras are machine-generated: over sshfs they live locally (WAN reads
+# at every prompt/run hurt); on campus they stay on AFS as before
+if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
+    EXTRAS="$HOME/.pie"
+    say "extras: sshfs AFS detected, installing to $EXTRAS (local)"
+else
+    EXTRAS="$DOT"
+fi
+mkdir -p "$EXTRAS"
+cd "$EXTRAS"
+trap 'rm -rf "$DOT"/.new.* "$EXTRAS"/.new.*' EXIT
+
 # the extras below are loaded by inert hooks (bashrc, gdbinit) only when
 # present; each one skips on failure, the kit works without any of them
 
@@ -176,8 +188,8 @@ else
     if python3 -m pip install $pipq --no-cache-dir --no-compile \
         --target .new.pylib "epita-coding-style==$ECS_V"; then
         rm -rf pylib && mv .new.pylib pylib && mkdir -p bin
-        printf '#!/bin/sh\nexport PYTHONPATH="$HOME/afs/.confs/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "$HOME/afs/.confs/pylib/bin/epita-coding-style" "$@"\n' \
-            > bin/coding-style-check
+        printf '#!/bin/sh\nexport PYTHONPATH="%s/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "%s/pylib/bin/epita-coding-style" "$@"\n' \
+            "$EXTRAS" "$EXTRAS" > bin/coding-style-check
         chmod +x bin/coding-style-check
     else
         warn "coding-style-check: pip install failed, skipped"
