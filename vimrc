@@ -40,10 +40,12 @@ silent! colorscheme habamax            " also shipped: retrobox catppuccin sorbe
 
 " ---- EPITA C style ---------------------------------------------------------
 set colorcolumn=80                     " the style's hard line limit
-set expandtab tabstop=4 shiftwidth=4 softtabstop=4
+set expandtab tabstop=4 shiftwidth=4 softtabstop=4  " 4-wide indent, spaces only
 set shiftround                         " >> snaps to multiples of 4
-set autoindent
+set autoindent                         " new lines copy the current indent
 set list listchars=tab:>-,trail:-      " expose tabs and trailing spaces
+" (0: continuation lines align under the open paren; :0: case labels flush
+" with switch; fo+=j: joining lines drops redundant comment leaders
 autocmd pie FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
 
 " ---- search ----------------------------------------------------------------
@@ -56,6 +58,7 @@ silent! call mkdir($HOME . '/.vim/undo', 'p')
 set nowritebackup noswapfile           " no *~ and .swp litter in repos
 
 " ---- movement --------------------------------------------------------------
+" j/k move by screen line on wrapped text, by real line when counted (5j)
 nnoremap <expr> j v:count ? 'j' : 'gj'
 nnoremap <expr> k v:count ? 'k' : 'gk'
 nnoremap <Down> gj
@@ -86,6 +89,9 @@ nnoremap <leader>m :make<CR>
 nnoremap <leader>n :cnext<CR>
 nnoremap <leader>p :cprev<CR>
 nnoremap <leader>q :copen<CR>
+" Space-s: rename word under cursor across the file; the replacement is
+" pre-filled with the word itself, cursor placed to edit it (\< \> = exact
+" word, I = case-sensitive even with ignorecase set)
 nnoremap <leader>s :%s/\<<C-r><C-w>\>/<C-r><C-w>/gI<Left><Left><Left>
 " :Format runs the EPITA wrapper over the whole repo
 if executable('clang-format-epita')

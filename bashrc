@@ -2,13 +2,16 @@
 [[ $- != *i* ]] && return
 
 # History that survives many terminals
-HISTSIZE=100000
-HISTFILESIZE=100000
-HISTCONTROL=ignoreboth
-shopt -s histappend checkwinsize globstar autocd
+HISTSIZE=100000          # lines kept in memory per shell (default 500)
+HISTFILESIZE=100000      # lines kept in ~/.bash_history (default 500)
+HISTCONTROL=ignoreboth   # skip duplicates and space-prefixed commands
+# histappend: append to the history file instead of overwriting it
+# globstar:   ** in globs matches recursively (src/**/*.c)
+# autocd:     a bare directory name cd's into it
+shopt -s histappend globstar autocd
 
-export EDITOR=vim
-export UBSAN_OPTIONS=print_stacktrace=1
+export EDITOR=vim                        # editor git/crontab/etc. open
+export UBSAN_OPTIONS=print_stacktrace=1  # UBSAN reports show the call stack, not just file:line
 
 # Prompt: git's own contrib prompt (branch, dirty state, colors), with the
 # plain fallback if git's contrib dir ever moves. Path resolves through the
@@ -17,35 +20,44 @@ GITC="$(git --exec-path 2>/dev/null)/../../share/git/contrib/completion"
 if [ -r "$GITC/git-prompt.sh" ]; then
     . "$GITC/git-prompt.sh"
     [ -r "$GITC/git-completion.bash" ] && . "$GITC/git-completion.bash"
+    # DIRTYSTATE: * unstaged / + staged; UNTRACKEDFILES: %; COLORHINTS colors them
     GIT_PS1_SHOWDIRTYSTATE=1 GIT_PS1_SHOWUNTRACKEDFILES=1 GIT_PS1_SHOWCOLORHINTS=1
+    # 3-arg __git_ps1 rebuilds PS1 each prompt: <cwd><branch-in-format> $
     PROMPT_COMMAND='__git_ps1 "\[\e[36m\]\w\[\e[0m\]" " \$ " " (%s)"'
 else
     __branch() { git branch --show-current 2>/dev/null | sed 's/.*/ (&)/'; }
     PS1='\[\e[36m\]\w\[\e[33m\]$(__branch)\[\e[0m\] \$ '
 fi
 
-alias ls='ls --color=auto'
-alias ll='ls -lah'
-alias grep='grep --color=auto'
+alias ls='ls --color=auto'          # color-code file types
+alias ll='ls -lah'                  # -l long, -a dotfiles too, -h human sizes
+alias grep='grep --color=auto'      # highlight the match
 alias gs='git status'
 alias ga='git add'
-alias gc='git commit -m'
-alias gp='git push --follow-tags'
+alias gc='git commit -m'            # gc "message"
+alias gp='git push --follow-tags'   # also pushes annotated tags on pushed commits
 
-# Compile the piscine way: moulinette builds with -Wall -Wextra -Werror and
-# grades ASAN failures; UBSAN is free and catches signed overflow. -Wvla
-# because the style bans VLAs. cc99 builds are valgrind/rr-compatible
-# (ASAN is not, use ccsan OR valgrind, never both).
-alias cc99='gcc -std=c99 -Wall -Wextra -Wvla -Werror -pedantic -g3'
-alias ccsan='gcc -std=c99 -Wall -Wextra -Wvla -Werror -pedantic -g3 -fsanitize=address,undefined'
+# One flag set for every helper: identical diagnostics in all four builds.
+#   -std=c99 -pedantic  ISO C99; -pedantic diagnoses GNU extensions (std alone doesn't)
+#   -Wall -Wextra       curated warning sets for likely-bug constructs
+#   -Werror             warnings become errors: clean or no binary
+#   -Wvla               VLAs are legal C99, nothing else flags them
+#   -g3                 -g plus macro info: gdb can expand #defines
+CC99FLAGS='-std=c99 -Wall -Wextra -Wvla -Werror -pedantic -g3'
+alias cc99="gcc $CC99FLAGS"
+# ASAN: runtime traps for out-of-bounds, use-after-free, leaks (~2x slower;
+# owns the process memory map, so incompatible with valgrind/rr - use cc99
+# builds for those). UBSAN: traps signed overflow, null deref, bad shifts;
+# near-zero cost.
+alias ccsan="gcc $CC99FLAGS -fsanitize=address,undefined"
 
 # Criterion test suites (preinstalled). Function, not alias: libraries
 # must come after sources on the link line.
-cctest() { gcc -std=c99 -Wall -Wextra -Wvla -Werror -g3 "$@" -lcriterion; }
+cctest() { gcc $CC99FLAGS "$@" -lcriterion; }
 
 # cccov test.c src.c: criterion suite with a coverage report
 cccov() {
-    gcc -std=c99 -Wall -Wextra -Werror -g3 --coverage "$@" -lcriterion || return
+    gcc $CC99FLAGS --coverage "$@" -lcriterion || return
     ./a.out
     lcov -q -c -d . -o .cov.info && genhtml -q .cov.info -o coverage \
         && echo "coverage/index.html"
@@ -71,9 +83,12 @@ submit() {
 # AFS-persistent extras (installed by setup.sh):
 [ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
 command -v starship >/dev/null && eval "$(starship init bash)"
+# skipped when the nix-extras copy above already loaded the bindings
 command -v fzf >/dev/null && [ -r ~/afs/.confs/fzf-key-bindings.bash ] \
+    && ! declare -F __fzf_history__ >/dev/null \
     && . ~/afs/.confs/fzf-key-bindings.bash
-# fd makes Ctrl-T/fzf respect .gitignore and skip build dirs
+# fd skips .gitignored files and build dirs by default; --type f/d = files/dirs
+# only. DEFAULT_COMMAND feeds bare fzf, CTRL_T the file picker, ALT_C the cd picker.
 command -v fd >/dev/null \
     && export FZF_DEFAULT_COMMAND='fd --type f' \
               FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
@@ -93,7 +108,7 @@ kit() {
         cat "$f"
     fi
 }
-if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] && [ ! -e /tmp/.kit-hint ]; then
-    touch /tmp/.kit-hint 2>/dev/null
+if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] && [ ! -e "/tmp/.kit-hint-$UID" ]; then
+    touch "/tmp/.kit-hint-$UID" 2>/dev/null
     printf '\e[2mkit: type "kit" for the cheatsheet\e[0m\n'
 fi

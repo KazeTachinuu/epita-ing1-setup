@@ -1,12 +1,25 @@
+# readline string options take no trailing comments: notes sit above their line
+
+# Tab-complete case-insensitively
 set completion-ignore-case on
+# one Tab lists all matches (no double-Tab)
 set show-all-if-ambiguous on
+# show the common prefix before cycling starts
 set menu-complete-display-prefix on
+# color completions by file type (LS_COLORS)
 set colored-stats on
+# highlight the part already typed
 set colored-completion-prefix on
+# append / to symlinks that point at directories
 set mark-symlinked-directories on
+# completing mid-word doesn't duplicate the tail
 set skip-completed-text on
+# never beep or flash
 set bell-style none
+
+# Up/Down walk history filtered by what's already typed
 "\e[A": history-search-backward
 "\e[B": history-search-forward
+# Tab cycles matches in place instead of listing; Shift-Tab cycles backward
 TAB: menu-complete
 "\e[Z": menu-complete-backward
