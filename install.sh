@@ -7,8 +7,8 @@
 DOT="${AFS_DIR:-$HOME/afs}/.confs"
 
 # link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
-# converging in zero work when already correct. A pre-existing real file
-# is kept once as *.local-backup.
+# no-op when already correct. A pre-existing real file is kept once
+# as *.local-backup.
 link() {
     src="$DOT/$1" dst="${2:-$HOME/.$1}"
     [ -e "$src" ] || return 0

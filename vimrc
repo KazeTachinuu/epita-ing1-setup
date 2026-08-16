@@ -1,9 +1,8 @@
 " ============================================================================
 " EPITA PIE vimrc - vim-full 9.2, zero install, superset of vimrc.exam
 " ============================================================================
-" Layers: this file extends the 3-line exam core; muscle memory transfers.
-" Every line changes verified behavior on the PIE image; defaults live in
-" defaults.vim, the system vimrc, and ftplugins - not here.
+" Superset of vimrc.exam. Anything already covered by defaults.vim, the
+" system vimrc, or ftplugins is not repeated here.
 
 " Any user vimrc suppresses defaults.vim (incsearch, scrolloff, mouse,
 " ttimeout, filetype indent, last-cursor-position) - restore it first.
@@ -14,8 +13,8 @@ source $VIMRUNTIME/defaults.vim
 augroup pie | autocmd! | augroup END
 
 " ---- interface -------------------------------------------------------------
-set number                             " line numbers (gcc and gdb speak in them)
-set mouse=a                            " mouse in every mode, any terminal
+set number                             " line numbers
+set mouse=a                            " mouse in all modes
 set wildmode=longest:full,full         " complete longest, then cycle
 set wildoptions=pum                    " popup completion menu for :commands
 set laststatus=2                       " always show the statusline
@@ -26,11 +25,11 @@ set breakindent                        " wrapped lines keep their indent
 set splitright splitbelow              " new splits open right/below
 set hidden                             " switch buffers without saving first
 set autoread                           " pick up external file changes
-set ttimeoutlen=50                     " snappy Esc
+set ttimeoutlen=50                     " short Esc key-code timeout
 set clipboard=unnamedplus              " y/p use the system clipboard
-" the PIE runs no clipboard manager, so the X clipboard dies with vim
-" (freedesktop SAVE_TARGETS, which vim never implemented): on exit, hand
-" the last yank to xsel, which outlives vim and keeps it pasteable
+" no clipboard manager on the PIE, so the X clipboard is lost when vim
+" exits (vim never implemented SAVE_TARGETS); pass the last yank to xsel
+" on exit so it stays pasteable
 autocmd pie VimLeave * if !empty($DISPLAY) && !empty(getreg('+'))
     \ | silent! call system('xsel -ib', getreg('+')) | endif
 
@@ -39,11 +38,11 @@ set termguicolors background=dark
 silent! colorscheme habamax            " also shipped: retrobox catppuccin sorbet
 
 " ---- EPITA C style ---------------------------------------------------------
-set colorcolumn=80                     " the style's hard line limit
+set colorcolumn=80                     " 80-column limit marker
 set expandtab tabstop=4 shiftwidth=4 softtabstop=4  " 4-wide indent, spaces only
 set shiftround                         " >> snaps to multiples of 4
 set autoindent                         " new lines copy the current indent
-set list listchars=tab:>-,trail:-      " expose tabs and trailing spaces
+set list listchars=tab:>-,trail:-      " show tabs and trailing spaces
 " (0: continuation lines align under the open paren; :0: case labels flush
 " with switch; fo+=j: joining lines drops redundant comment leaders
 autocmd pie FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
@@ -52,10 +51,10 @@ autocmd pie FileType c,cpp setlocal cinoptions=(0,:0 formatoptions+=j
 set hlsearch ignorecase smartcase      " highlight all; smart casing
 nnoremap <silent> <Esc><Esc> :nohlsearch<CR>
 
-" ---- files: undo yes, clutter no -------------------------------------------
+" ---- files -----------------------------------------------------------------
 set undofile undodir=~/.vim/undo//     " undo history survives closing files
 silent! call mkdir($HOME . '/.vim/undo', 'p')
-set nowritebackup noswapfile           " no *~ and .swp litter in repos
+set nowritebackup noswapfile           " no backup/swap files
 
 " ---- movement --------------------------------------------------------------
 " j/k move by screen line on wrapped text, by real line when counted (5j)
@@ -107,15 +106,15 @@ let g:clang_format#auto_format = 1
 let g:clang_format#detect_style_file = 1
 let g:clang_format#enable_fallback_style = 0
 
-" ---- built-in power (all exam-available) -----------------------------------
+" ---- built-in plugins (also on exam machines) ------------------------------
 packadd! termdebug                     " :Termdebug ./a.out - GDB UI in vim
 packadd! comment                       " gcc / gc toggles comments
 packadd! matchit                       " % jumps on #if / #endif
 runtime ftplugin/man.vim               " :Man malloc (K also works bare)
 
 " ---- LSP: clangd (preinstalled on the PIE) ---------------------------------
-" install.sh clones yegappan/lsp into pack/kit/start once; inert without it.
-" Snippet support (function-argument placeholders) lights up when vsnip is
+" install.sh clones yegappan/lsp into pack/kit/start; does nothing without it.
+" Snippet support (function-argument placeholders) is enabled when vsnip is
 " present; Tab jumps between placeholders.
 autocmd pie User LspSetup call LspOptionsSet(extend(
     \ {'semanticHighlight': v:true, 'showDiagWithVirtualText': v:true},

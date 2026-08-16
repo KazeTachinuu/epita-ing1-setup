@@ -63,9 +63,8 @@ cccov() {
         && echo "coverage/index.html"
 }
 
-# submit <tag>: the moulinette flow - clean tree, formatted, annotated
-# tag, push with tags. The forgotten tag or unformatted tree is the
-# classic zero; this refuses both.
+# submit <tag>: moulinette submission. Refuses a dirty or unformatted
+# tree and requires the annotated tag, then pushes with tags.
 submit() {
     [ $# -eq 1 ] || { echo 'usage: submit <tagname>' >&2; return 2; }
     [ -z "$(git status --porcelain)" ] \
