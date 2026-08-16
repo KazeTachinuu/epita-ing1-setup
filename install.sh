@@ -26,24 +26,20 @@ link clang-format
 link gdbinit
 link inputrc
 
-# Plugin layer: ~/.vim lives on AFS; one plugin, native packages, no manager.
-mkdir -p "$DOT/vim/pack/kit/start"
-# Over sshfs, vim's ~150 startup opens are WAN round-trips: copy ~/.vim
-# locally instead of linking (home is disposable). The .kit-copy sentinel
-# (plugin dir mtime) keeps converged runs to a single stat.
-vim_copy() {
-    stamp=$(stat -c %Y "$DOT/vim/pack/kit/start" 2>/dev/null || echo none)
-    [ "$(cat "$HOME/.vim/.kit-copy" 2>/dev/null)" = "$stamp" ] && return 0
-    cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null
-    echo "$stamp" > "$HOME/.vim/.kit-copy"
-}
+# Plugin layer: ~/.vim on AFS, native packages, no manager. Over sshfs
+# (from-home mount) every vim file access is a WAN round-trip, so there
+# ~/.vim is a plain local dir and plugins clone straight from GitHub into
+# it (pinned, fast); home is disposable, AFS keeps the campus set.
 if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
-    [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"      # replace a campus symlink
-    mkdir -p "$HOME/.vim"
-    vim_copy || true
+    [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"
+    PLUG="$HOME/.vim/pack/kit/start"
+    mkdir -p "$PLUG"
+    touch "$HOME/.vim/.kit-copy"
 else
-    # back on campus: drop a marked home-copy, restore the canonical symlink
+    # back on campus: drop the local dir, restore the canonical symlink
     [ -e "$HOME/.vim/.kit-copy" ] && rm -rf "$HOME/.vim"
+    PLUG="$DOT/vim/pack/kit/start"
+    mkdir -p "$PLUG"
     link vim
 fi
 
@@ -64,7 +60,7 @@ if command -v git >/dev/null 2>&1; then
             "rhysd/vim-clang-format 6b791825ff478061ad1c57b21bb1ed5a5fd0eb29"
         do
             repo=${entry% *}; pin=${entry#* }
-            d="$DOT/vim/pack/kit/start/${repo##*/}"
+            d="$PLUG/${repo##*/}"
             [ -d "$d" ] && continue
             git init -q "$d" &&
                 git -C "$d" fetch -q --depth 1 "https://github.com/$repo" "$pin" &&
@@ -72,8 +68,6 @@ if command -v git >/dev/null 2>&1; then
                 [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
                 rm -rf "$d"
         done
-        # copy mode: fold fresh clones into the local ~/.vim now
-        [ -e "$HOME/.vim/.kit-copy" ] && vim_copy
     ) >/dev/null 2>&1 &
 fi
 
