@@ -32,9 +32,9 @@ FD_V=10.4.2
 FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
 GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
-ECS_V=2.0.0
-IGN_PIN=cb55b56180dc14e6f95bbad20238d21c933df400
-IGN_SHA=cfef81bb8dbb01962d891edd11d4b2efb267c9107ddb887e4b607e092b12b540
+ECS_V=3.4.0
+IGN_PIN=abc54db9cc3f6baf61b6ae7bfc6e2cc9858f5612
+IGN_SHA=9a43816e88a690af3c9b9507d60b782bb79ff2d6bfc67d1c1347df84de4ccd2f
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' D='\033[2m' N='\033[0m'
@@ -47,8 +47,10 @@ warn()     { printf "${Y}[-]${N} %s\n" "$1"; }
 extras()   { [ "${PIE_MINIMAL:-0}" != 1 ]; }
 verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
 
+# every download aborts on a stalled connection instead of hanging
+CURL_OPTS="--connect-timeout 5 --speed-limit 1 --speed-time 30 --retry 1"
 # on a terminal, downloads show curl's progress bar (stderr); quiet otherwise
-if [ -t 2 ]; then CURL="curl -f#L"; else CURL="curl -fsSL"; fi
+if [ -t 2 ]; then CURL="curl -f#L $CURL_OPTS"; else CURL="curl -fsSL $CURL_OPTS"; fi
 
 # everything imperative lives in main, called on the last line: a truncated
 # curl | sh download defines a broken function and executes nothing
@@ -89,7 +91,7 @@ i=0
 for f in $FILES; do
     i=$((i + 1))
     [ -t 1 ] && printf "\r    ${D}%2d/%d %s${N}\033[K" "$i" "$#" "$f" || true
-    curl -fsSL "$BASE/$f" -o ".new.$f"
+    curl -fsSL $CURL_OPTS "$BASE/$f" -o ".new.$f"
     mv ".new.$f" "$f"
 done
 [ -t 1 ] && printf '\r\033[K' || true
@@ -136,7 +138,7 @@ fetch_bin fd "v$FD_V" \
 
 # fzf's bash key bindings (fuzzy Ctrl-R history, Ctrl-T files)
 if extras && [ -x bin/fzf ] && [ ! -r fzf-key-bindings.bash ]; then
-    if curl -fsSL -o .new.fzf-kb.bash \
+    if curl -fsSL $CURL_OPTS -o .new.fzf-kb.bash \
         "https://raw.githubusercontent.com/junegunn/fzf/v$FZF_V/shell/key-bindings.bash" \
         && verified .new.fzf-kb.bash "$FZF_KB_SHA"; then
         mv .new.fzf-kb.bash fzf-key-bindings.bash
@@ -170,9 +172,11 @@ else
     ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
     if [ -e "$ca" ]; then export PIP_CERT="$ca" SSL_CERT_FILE="$ca"; fi
     if [ -t 2 ]; then pipq=; else pipq=-q; fi
-    if python3 -m pip install $pipq --target .new.pylib "epita-coding-style==$ECS_V" 2>/dev/null; then
+    # no pip cache, no .pyc: both land on AFS, where small writes crawl
+    if python3 -m pip install $pipq --no-cache-dir --no-compile \
+        --target .new.pylib "epita-coding-style==$ECS_V"; then
         rm -rf pylib && mv .new.pylib pylib && mkdir -p bin
-        printf '#!/bin/sh\nexport PYTHONPATH="$HOME/afs/.confs/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "$HOME/afs/.confs/pylib/bin/coding-style-check" "$@"\n' \
+        printf '#!/bin/sh\nexport PYTHONPATH="$HOME/afs/.confs/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "$HOME/afs/.confs/pylib/bin/epita-coding-style" "$@"\n' \
             > bin/coding-style-check
         chmod +x bin/coding-style-check
     else
