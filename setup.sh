@@ -15,7 +15,9 @@ set -eu
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
 PIN=fce43ba9062d6d3bdc137ce6e5ba483f38148f8d
-BASE="${PIE_BASE:-https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/$PIN}"
+RAWGH=https://raw.githubusercontent.com
+GH=https://github.com
+BASE="${PIE_BASE:-$RAWGH/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
 DOT="$AFS/.confs"
 FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
@@ -50,7 +52,8 @@ verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
 # every download aborts on a stalled connection instead of hanging
 CURL_OPTS="--connect-timeout 5 --speed-limit 1 --speed-time 30 --retry 1"
 # on a terminal, downloads show curl's progress bar (stderr); quiet otherwise
-if [ -t 2 ]; then CURL="curl -f#L $CURL_OPTS"; else CURL="curl -fsSL $CURL_OPTS"; fi
+CURL="curl -fsSL $CURL_OPTS"
+[ -t 2 ] && CURL="curl -f#L $CURL_OPTS"
 
 # everything imperative lives in main, called on the last line: a truncated
 # curl | sh download defines a broken function and executes nothing
@@ -77,7 +80,8 @@ if [ ! -e .kit ] && [ ! -e "$AFS/.confs.backup" ]; then
         mkdir -p "$AFS/.confs.backup"
         cp -a "$f" "$AFS/.confs.backup/"
     done
-    [ -e "$AFS/.confs.backup" ] && say "existing configs found: kept a copy in .confs.backup"
+    [ -e "$AFS/.confs.backup" ] &&
+        say "existing configs found: kept a copy in .confs.backup"
 fi
 touch .kit
 
@@ -96,6 +100,7 @@ for f in $FILES; do
 done
 [ -t 1 ] && printf '\r\033[K' || true
 chmod +x install.sh
+printf '%s\n' "$PIN" > .kit    # version stamp, read by `kit status`
 
 # install configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
@@ -105,7 +110,8 @@ say "configs: installed"
 
 # extras are machine-generated: over sshfs they live locally (WAN reads
 # at every prompt/run hurt); on campus they stay on AFS as before
-if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
+fstype=$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')
+if [ "$fstype" = "fuse.sshfs" ]; then
     EXTRAS="$HOME/.pie"
     say "extras: sshfs AFS detected, installing to $EXTRAS (local)"
 else
@@ -123,7 +129,8 @@ trap 'rm -rf "$DOT"/.new.* "$EXTRAS"/.new.*' EXIT
 fetch_bin() {
     extras || return 0
     if [ -x "bin/$1" ]; then
-        skip "$1: already installed ($("bin/$1" --version 2>/dev/null | head -1 || echo unknown))"
+        v=$("bin/$1" --version 2>/dev/null | head -1 || echo unknown)
+        skip "$1: already installed ($v)"
         return 0
     fi
     say "$1: fetching $2 (checksum-verified)"
@@ -135,23 +142,28 @@ fetch_bin() {
     fi
 }
 
+# a \ at end of line inside double quotes continues the string: the long
+# release URLs below are single tokens split for the 80-column limit
 fetch_bin starship "v$STARSHIP_V" \
-    "https://github.com/starship/starship/releases/download/v$STARSHIP_V/starship-x86_64-unknown-linux-musl.tar.gz" \
+    "$GH/starship/starship/releases/download/v$STARSHIP_V\
+/starship-x86_64-unknown-linux-musl.tar.gz" \
     "$STARSHIP_SHA" starship
 fetch_bin fzf "v$FZF_V" \
-    "https://github.com/junegunn/fzf/releases/download/v$FZF_V/fzf-$FZF_V-linux_amd64.tar.gz" \
+    "$GH/junegunn/fzf/releases/download/v$FZF_V/fzf-$FZF_V-linux_amd64.tar.gz" \
     "$FZF_SHA" fzf
 fetch_bin rg "v$RG_V (ripgrep)" \
-    "https://github.com/BurntSushi/ripgrep/releases/download/$RG_V/ripgrep-$RG_V-x86_64-unknown-linux-musl.tar.gz" \
+    "$GH/BurntSushi/ripgrep/releases/download/$RG_V\
+/ripgrep-$RG_V-x86_64-unknown-linux-musl.tar.gz" \
     "$RG_SHA" "ripgrep-$RG_V-x86_64-unknown-linux-musl/rg"
 fetch_bin fd "v$FD_V" \
-    "https://github.com/sharkdp/fd/releases/download/v$FD_V/fd-v$FD_V-x86_64-unknown-linux-musl.tar.gz" \
+    "$GH/sharkdp/fd/releases/download/v$FD_V\
+/fd-v$FD_V-x86_64-unknown-linux-musl.tar.gz" \
     "$FD_SHA" "fd-v$FD_V-x86_64-unknown-linux-musl/fd"
 
 # fzf's bash key bindings (fuzzy Ctrl-R history, Ctrl-T files)
 if extras && [ -x bin/fzf ] && [ ! -r fzf-key-bindings.bash ]; then
     if curl -fsSL $CURL_OPTS -o .new.fzf-kb.bash \
-        "https://raw.githubusercontent.com/junegunn/fzf/v$FZF_V/shell/key-bindings.bash" \
+        "$RAWGH/junegunn/fzf/v$FZF_V/shell/key-bindings.bash" \
         && verified .new.fzf-kb.bash "$FZF_KB_SHA"; then
         mv .new.fzf-kb.bash fzf-key-bindings.bash
     else
@@ -165,7 +177,7 @@ elif [ -e gef.py ]; then
     skip "GEF: already installed"
 else
     say "GEF: fetching $GEF_V (checksum-verified)"
-    if $CURL -o .new.gef.py "https://raw.githubusercontent.com/hugsy/gef/$GEF_V/gef.py" \
+    if $CURL -o .new.gef.py "$RAWGH/hugsy/gef/$GEF_V/gef.py" \
         && verified .new.gef.py "$GEF_SHA"; then
         mv .new.gef.py gef.py
     else
@@ -181,15 +193,18 @@ elif [ -x bin/coding-style-check ]; then
     skip "coding-style-check: already installed"
 else
     say "coding-style-check: fetching epita-coding-style $ECS_V (PyPI, pinned)"
-    ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
-    if [ -e "$ca" ]; then export PIP_CERT="$ca" SSL_CERT_FILE="$ca"; fi
+    set -- /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt
+    [ -e "$1" ] && export PIP_CERT="$1" SSL_CERT_FILE="$1"
     if [ -t 2 ]; then pipq=; else pipq=-q; fi
     # no pip cache, no .pyc: both land on AFS, where small writes crawl
     if python3 -m pip install $pipq --no-cache-dir --no-compile \
         --target .new.pylib "epita-coding-style==$ECS_V"; then
         rm -rf pylib && mv .new.pylib pylib && mkdir -p bin
-        printf '#!/bin/sh\nexport PYTHONPATH="%s/pylib${PYTHONPATH:+:$PYTHONPATH}"\nexec python3 "%s/pylib/bin/epita-coding-style" "$@"\n' \
-            "$EXTRAS" "$EXTRAS" > bin/coding-style-check
+        cat > bin/coding-style-check <<EOF
+#!/bin/sh
+export PYTHONPATH="$EXTRAS/pylib\${PYTHONPATH:+:\$PYTHONPATH}"
+exec python3 "$EXTRAS/pylib/bin/epita-coding-style" "\$@"
+EOF
         chmod +x bin/coding-style-check
     else
         warn "coding-style-check: pip install failed, skipped"
@@ -202,9 +217,9 @@ if ! extras; then :
 elif [ -x bin/ignore ]; then
     skip "ignore: already installed"
 else
-    say "ignore: fetching epita-gitignore @ $(printf %.7s "$IGN_PIN") (checksum-verified)"
+    say "ignore: epita-gitignore @ $(printf %.7s "$IGN_PIN") (verified)"
     if $CURL -o .new.ignore \
-        "https://raw.githubusercontent.com/KazeTachinuu/epita-gitignore/$IGN_PIN/ignore.sh" \
+        "$RAWGH/KazeTachinuu/epita-gitignore/$IGN_PIN/ignore.sh" \
         && verified .new.ignore "$IGN_SHA"; then
         mkdir -p bin && mv .new.ignore bin/ignore && chmod +x bin/ignore
     else

@@ -11,7 +11,8 @@ HISTCONTROL=ignoreboth   # skip duplicates and space-prefixed commands
 shopt -s histappend globstar autocd
 
 export EDITOR=vim                        # editor git/crontab/etc. open
-export UBSAN_OPTIONS=print_stacktrace=1  # UBSAN reports show the call stack, not just file:line
+# UBSAN reports show the call stack, not just file:line
+export UBSAN_OPTIONS=print_stacktrace=1
 
 # Prompt: git's own contrib prompt (branch, dirty state, colors), with the
 # plain fallback if git's contrib dir ever moves. Path resolves through the
@@ -20,8 +21,9 @@ GITC="$(git --exec-path 2>/dev/null)/../../share/git/contrib/completion"
 if [ -r "$GITC/git-prompt.sh" ]; then
     . "$GITC/git-prompt.sh"
     [ -r "$GITC/git-completion.bash" ] && . "$GITC/git-completion.bash"
-    # DIRTYSTATE: * unstaged / + staged; UNTRACKEDFILES: %; COLORHINTS colors them
-    GIT_PS1_SHOWDIRTYSTATE=1 GIT_PS1_SHOWUNTRACKEDFILES=1 GIT_PS1_SHOWCOLORHINTS=1
+    # DIRTYSTATE: * unstaged / + staged; UNTRACKEDFILES: %; COLORHINTS colors
+    GIT_PS1_SHOWDIRTYSTATE=1 GIT_PS1_SHOWUNTRACKEDFILES=1
+    GIT_PS1_SHOWCOLORHINTS=1
     # 3-arg __git_ps1 rebuilds PS1 each prompt: <cwd><branch-in-format> $
     PROMPT_COMMAND='__git_ps1 "\[\e[36m\]\w\[\e[0m\]" " \$ " " (%s)"'
 else
@@ -35,10 +37,10 @@ alias grep='grep --color=auto'      # highlight the match
 alias gs='git status'
 alias ga='git add'
 alias gc='git commit -m'            # gc "message"
-alias gp='git push --follow-tags'   # also pushes annotated tags on pushed commits
+alias gp='git push --follow-tags'   # also pushes annotated tags
 
 # One flag set for every helper: identical diagnostics in all four builds.
-#   -std=c99 -pedantic  ISO C99; -pedantic diagnoses GNU extensions (std alone doesn't)
+#   -std=c99 -pedantic  ISO C99; -pedantic flags GNU extensions too
 #   -Wall -Wextra       curated warning sets for likely-bug constructs
 #   -Werror             warnings become errors: clean or no binary
 #   -Wvla               VLAs are legal C99, nothing else flags them
@@ -69,16 +71,20 @@ submit() {
     [ $# -eq 1 ] || { echo 'usage: submit <tagname>' >&2; return 2; }
     [ -z "$(git status --porcelain)" ] \
         || { echo 'submit: uncommitted changes, commit first' >&2; return 1; }
-    if [ -e "$(git rev-parse --show-toplevel)/.clang-format" ] && command -v clang-format >/dev/null; then
-        git ls-files '*.c' '*.h' | xargs -r clang-format --Werror --dry-run 2>/dev/null \
-            || { echo 'submit: unformatted files, run: clang-format -i *.c *.h' >&2; return 1; }
+    if [ -e "$(git rev-parse --show-toplevel)/.clang-format" ] &&
+        command -v clang-format >/dev/null; then
+        git ls-files '*.c' '*.h' |
+            xargs -r clang-format --Werror --dry-run 2>/dev/null ||
+            { echo 'submit: unformatted, run: clang-format -i *.c *.h' >&2
+              return 1; }
     fi
     git tag -a "$1" -m "$1" && git push --follow-tags
 }
 
 # Optional layers - every line inert unless you installed the thing.
 # nix extras (see install.sh):
-[ -r ~/.nix-profile/share/fzf/key-bindings.bash ] && . ~/.nix-profile/share/fzf/key-bindings.bash
+[ -r ~/.nix-profile/share/fzf/key-bindings.bash ] &&
+    . ~/.nix-profile/share/fzf/key-bindings.bash
 # extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus
 [ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
 [ -d ~/.pie/bin ] && PATH="$HOME/.pie/bin:$PATH"
@@ -88,15 +94,35 @@ for _kb in ~/.pie/fzf-key-bindings.bash ~/afs/.confs/fzf-key-bindings.bash; do
     command -v fzf >/dev/null && [ -r "$_kb" ] \
         && ! declare -F __fzf_history__ >/dev/null && . "$_kb"
 done; unset _kb
-# fd skips .gitignored files and build dirs by default; --type f/d = files/dirs
-# only. DEFAULT_COMMAND feeds bare fzf, CTRL_T the file picker, ALT_C the cd picker.
+# fd skips .gitignored files and build dirs; --type f/d = files/dirs only.
+# DEFAULT_COMMAND feeds bare fzf, CTRL_T the file picker, ALT_C the cd one.
 command -v fd >/dev/null \
     && export FZF_DEFAULT_COMMAND='fd --type f' \
               FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
 
-# `kit` shows what the kit gives you; hinted once per session
+# kit: cheatsheet; kit status: check for updates; kit update: reinstall
 kit() {
-    local f=~/afs/.confs/cheatsheet
+    local d=~/afs/.confs f=~/afs/.confs/cheatsheet cur latest
+    local raw=https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup
+    case "${1:-}" in
+    update)
+        curl -fsSL "$raw/master/setup.sh" | sh; return ;;
+    status)
+        cur=$(cat "$d/.kit" 2>/dev/null)
+        if [ -z "$cur" ]; then
+            echo 'kit: version unknown, run: kit update'; return 1
+        fi
+        latest=$(curl -fsSL --max-time 3 "$raw/master/setup.sh" \
+                     2>/dev/null | sed -n 's/^PIN=//p')
+        if [ -z "$latest" ]; then
+            echo 'kit: offline, cannot check'; return 1
+        elif [ "$cur" = "$latest" ]; then
+            printf 'kit: up to date (%.7s)\n' "$cur"
+        else
+            printf 'kit: update available (%.7s -> %.7s), run: kit update\n' \
+                "$cur" "$latest"
+        fi; return ;;
+    esac
     [ -r "$f" ] || { echo 'kit: not installed'; return 1; }
     if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
         awk 'NR==1      { printf "\033[1m%s\033[0m\n", $0; next }
@@ -109,7 +135,10 @@ kit() {
         cat "$f"
     fi
 }
-if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] && [ ! -e "/tmp/.kit-hint-$UID" ]; then
+if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] &&
+    [ ! -e "/tmp/.kit-hint-$UID" ]; then
     touch "/tmp/.kit-hint-$UID" 2>/dev/null
     printf '\e[2mkit: type "kit" for the cheatsheet\e[0m\n'
+    # once per boot: mention a kit update if one is out (3s cap, offline-safe)
+    kit status 2>/dev/null | grep 'update available' || true
 fi

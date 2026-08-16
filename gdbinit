@@ -1,6 +1,7 @@
 # EPITA PIE gdbinit - quality of life, no magic
 # gdb takes no trailing comments: each note sits above its line
-# keep command history across sessions, in a fixed file (default: ./.gdb_history)
+# keep command history across sessions, in one fixed file
+# (the default is ./.gdb_history, one per directory)
 set history save on
 set history filename ~/.gdb_history
 # structs print one indented field per line

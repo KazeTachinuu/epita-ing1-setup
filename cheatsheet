@@ -1,7 +1,7 @@
 EPITA PIE kit                github.com/KazeTachinuu/epita-ing1-setup
 
 compile
-  cc99 main.c                 moulinette flags (-std=c99 -Wall -Wextra -Werror -pedantic -g3)
+  cc99 main.c                 moulinette flags (see bashrc for the list)
   ccsan main.c                same + ASAN/UBSAN
   cctest test.c str.c         criterion suite -> ./a.out
   cccov test.c str.c          same + coverage report -> coverage/index.html
@@ -9,9 +9,9 @@ style
   clang-format -i *.c         apply the graded style (vim formats C on save)
   coding-style-check .        style linter: 54 rules clang-format cannot check
 submit
-  submit tagname              clean-tree + format gate, annotated tag, push --follow-tags
+  submit tagname              clean + formatted gate, annotated tag, push
   gp                          git push --follow-tags
-  ignore                      gitignore school-provided files (parses exercise PDFs)
+  ignore                      gitignore school-provided files (from PDFs)
 search
   rg word                     grep the repo
   fd name                     find files
@@ -31,11 +31,14 @@ gdb
   valgrind ./a.out            on a cc99 build (ASAN and valgrind conflict)
 tmux
   tmux                        mouse on, vi copy mode
+kit
+  kit status                  installed vs latest (checked once per boot)
+  kit update                  fetch and install the latest kit
 
 i3 (stock, identical on exams)
   Super+Enter / Super+d       terminal / launcher
   Super+1..9                  workspaces
   Super+Shift+q               close window
-  i3lock                      lock when you leave (white screen = locked, not frozen)
+  i3lock                      lock when you leave (white screen = locked)
 
 exams: no AFS, kit tools absent; memorize vimrc.exam (3 lines)

@@ -1,8 +1,9 @@
 #!/bin/sh
 # EPITA PIE bootstrap.
 # Run by PAM at every session open (see nixpie modules/config/users-groups.nix):
-# the PIE executes ~/afs/.confs/install.sh with AFS_DIR=$HOME/afs at each login.
-# Must therefore be: idempotent, instant when converged, and never fail the login.
+# the PIE executes ~/afs/.confs/install.sh with AFS_DIR=$HOME/afs at each
+# login. Must therefore be idempotent, instant when converged, and never
+# fail the login.
 
 DOT="${AFS_DIR:-$HOME/afs}/.confs"
 
@@ -21,7 +22,7 @@ link() {
 
 link vimrc
 link bashrc
-link gitconfig    # not shipped; linked if the student keeps one on AFS (CRI convention)
+link gitconfig    # not shipped; linked if kept on AFS (CRI convention)
 link clang-format
 link gdbinit
 link inputrc
@@ -30,7 +31,8 @@ link inputrc
 # (from-home mount) every vim file access is a WAN round-trip, so there
 # ~/.vim is a plain local dir and plugins clone straight from GitHub into
 # it (pinned, fast); home is disposable, AFS keeps the campus set.
-if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
+fstype=$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')
+if [ "$fstype" = "fuse.sshfs" ]; then
     [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"
     PLUG="$HOME/.vim/pack/kit/start"
     mkdir -p "$PLUG"
@@ -50,20 +52,21 @@ if command -v git >/dev/null 2>&1; then
     (
         # the PIE image ships CA certs only in the nix store; on machines
         # with a normal cert setup the glob misses and git's default works
-        ca=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
-        [ -e "$ca" ] && export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$ca}"
+        set -- /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt
+        [ -e "$1" ] && export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$1}"
         for entry in \
-            "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
-            "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
-            "hrsh7th/vim-vsnip 9bcfabea653abdcdac584283b5097c3f8760abaa" \
-            "rafamadriz/friendly-snippets 6cd7280adead7f586db6fccbd15d2cac7e2188b9" \
-            "rhysd/vim-clang-format 6b791825ff478061ad1c57b21bb1ed5a5fd0eb29"
+        "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
+        "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
+        "hrsh7th/vim-vsnip 9bcfabea653abdcdac584283b5097c3f8760abaa" \
+        "rhysd/vim-clang-format 6b791825ff478061ad1c57b21bb1ed5a5fd0eb29" \
+        "rafamadriz/friendly-snippets 6cd7280adead7f586db6fccbd15d2cac7e2188b9"
         do
             repo=${entry% *}; pin=${entry#* }
             d="$PLUG/${repo##*/}"
             [ -d "$d" ] && continue
             git init -q "$d" &&
-                git -C "$d" fetch -q --depth 1 "https://github.com/$repo" "$pin" &&
+                git -C "$d" fetch -q --depth 1 \
+                    "https://github.com/$repo" "$pin" &&
                 git -C "$d" checkout -q FETCH_HEAD &&
                 [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
                 rm -rf "$d"
@@ -80,7 +83,10 @@ link starship.toml "$HOME/.config/starship.toml"
 # Optional normal-day extras (opt in: touch $DOT/nix-extras).
 # Backgrounded and silent: must never delay or fail a login.
 if [ -e "$DOT/nix-extras" ] && command -v nix >/dev/null 2>&1; then
-    [ -n "${NIX_SSL_CERT_FILE:-}" ] || export NIX_SSL_CERT_FILE=$(echo /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt | cut -d' ' -f1)
+    if [ -z "${NIX_SSL_CERT_FILE:-}" ]; then
+        set -- /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt
+        [ -e "$1" ] && export NIX_SSL_CERT_FILE="$1"
+    fi
     nix --extra-experimental-features 'nix-command flakes' \
         profile add nixpkgs#fzf nixpkgs#bash-completion >/dev/null 2>&1 &
 fi
