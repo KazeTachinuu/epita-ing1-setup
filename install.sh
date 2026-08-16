@@ -69,6 +69,9 @@ if command -v git >/dev/null 2>&1; then
                 [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
                 rm -rf "$d"
         done
+        # in copy mode (sshfs), fold freshly cloned plugins into the local
+        # ~/.vim now instead of waiting for the next login
+        [ -e "$HOME/.vim/.kit-copy" ] && cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null
     ) >/dev/null 2>&1 &
 fi
 

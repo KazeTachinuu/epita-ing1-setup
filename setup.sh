@@ -99,7 +99,7 @@ chmod +x install.sh
 
 # link configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
-say "configs: linked into \$HOME (install.sh; vim plugins clone in background)"
+say "configs: installed into \$HOME (install.sh; vim plugins clone in background)"
 
 AFS_DIR="$AFS" ./install.sh
 
