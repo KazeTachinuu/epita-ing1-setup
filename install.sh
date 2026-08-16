@@ -28,7 +28,21 @@ link inputrc
 
 # Plugin layer: ~/.vim lives on AFS; one plugin, native packages, no manager.
 mkdir -p "$DOT/vim/pack/kit/start"
-link vim
+# Over sshfs (the from-home `afs` mount) every one of the ~150 files vim opens
+# at startup is a WAN round-trip: several seconds per launch. There, ~/.vim is
+# materialized as a LOCAL COPY instead of a symlink; the PIE wipes home each
+# session, so the copy is exactly as disposable as the link. `cp -u` makes the
+# converged case metadata-only. On campus (real AFS, LAN-fast): symlink as ever.
+if [ "$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')" = "fuse.sshfs" ]; then
+    [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"      # replace a campus symlink
+    mkdir -p "$HOME/.vim"
+    cp -ru "$DOT/vim/." "$HOME/.vim/" 2>/dev/null || true
+    touch "$HOME/.vim/.kit-copy"                   # mark disposable (see below)
+else
+    # back on campus: drop a marked home-copy, restore the canonical symlink
+    [ -e "$HOME/.vim/.kit-copy" ] && rm -rf "$HOME/.vim"
+    link vim
+fi
 
 # One-time plugin fetches, pinned to exact commits and verified after
 # checkout (removed on any mismatch: no unpinned code ever persists).
