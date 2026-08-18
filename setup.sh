@@ -14,7 +14,7 @@ set -eu
 
 # configs come from a pinned commit, not a mutable branch: the bytes you
 # get are exactly the bytes reviewed at release time
-PIN=d0ad690a9ec65cccbc9391f4435425578dad62ad
+PIN=381cc919abe75538552644adfc4ab90b0d050208
 RAWGH=https://raw.githubusercontent.com
 GH=https://github.com
 BASE="${PIE_BASE:-$RAWGH/KazeTachinuu/epita-ing1-setup/$PIN}"
