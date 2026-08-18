@@ -91,18 +91,24 @@ touch .kit
 # only when complete (and verified); the trap sweeps interrupted leftovers
 trap 'rm -rf "$DOT"/.new.*' EXIT
 
-set -- $FILES
-say "configs: fetching $# files -> $DOT"
-i=0
-for f in $FILES; do
-    i=$((i + 1))
-    [ -t 1 ] && printf "\r    ${D}%2d/%d %s${N}\033[K" "$i" "$#" "$f" || true
-    curl -fsSL $CURL_OPTS "$BASE/$f" -o ".new.$f"
-    mv ".new.$f" "$f"
-done
-[ -t 1 ] && printf '\r\033[K' || true
-chmod +x install.sh
-printf '%s\n' "$PIN" > .kit    # version stamp, read by `kit status`
+# the .kit stamp already at this PIN means the configs are these bytes
+if [ "$(cat .kit 2>/dev/null)" = "$PIN" ]; then
+    skip "configs: already at $(printf %.7s "$PIN")"
+else
+    set -- $FILES
+    say "configs: fetching $# files -> $DOT"
+    i=0
+    for f in $FILES; do
+        i=$((i + 1))
+        [ -t 1 ] && printf "\r    ${D}%2d/%d %s${N}\033[K" "$i" "$#" "$f" \
+            || true
+        curl -fsSL $CURL_OPTS "$BASE/$f" -o ".new.$f"
+        mv ".new.$f" "$f"
+    done
+    [ -t 1 ] && printf '\r\033[K' || true
+    chmod +x install.sh
+    printf '%s\n' "$PIN" > .kit    # version stamp, read by `kit status`
+fi
 
 # install configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
@@ -127,15 +133,20 @@ trap 'rm -rf "$DOT"/.new.* "$EXTRAS"/.new.*' EXIT
 # present; each one skips on failure, the kit works without any of them
 
 # fetch_bin <bin> <version> <url> <sha> <path-in-tar>: pinned static
-# binary, checksum-verified, atomically placed in bin/
+# binary, checksum-verified, atomically placed in bin/; skipped only
+# while the installed --version still matches the pin
 fetch_bin() {
     extras || return 0
+    ver=${2#v}; ver=${ver%% *}
     if [ -x "bin/$1" ]; then
         v=$("bin/$1" --version 2>/dev/null | head -1 || echo unknown)
-        skip "$1: already installed ($v)"
-        return 0
+        case "$v" in *"$ver"*)
+            skip "$1: already installed ($v)"; return 0 ;;
+        esac
+        say "$1: updating to $2 (had: $v)"
+    else
+        say "$1: fetching $2 (checksum-verified)"
     fi
-    say "$1: fetching $2 (checksum-verified)"
     if $CURL -o ".new.$1.tgz" "$3" && verified ".new.$1.tgz" "$4" \
         && mkdir -p ".new.$1" bin && tar xzf ".new.$1.tgz" -C ".new.$1"; then
         mv ".new.$1/$5" "bin/$1"
@@ -167,7 +178,8 @@ fetch_bin tldr "v$TLRC_V (tlrc)" \
     "$TLRC_SHA" tldr
 
 # fzf's bash key bindings (fuzzy Ctrl-R history, Ctrl-T files)
-if extras && [ -x bin/fzf ] && [ ! -r fzf-key-bindings.bash ]; then
+if extras && [ -x bin/fzf ] && ! verified fzf-key-bindings.bash "$FZF_KB_SHA"
+then
     if curl -fsSL $CURL_OPTS -o .new.fzf-kb.bash \
         "$RAWGH/junegunn/fzf/v$FZF_V/shell/key-bindings.bash" \
         && verified .new.fzf-kb.bash "$FZF_KB_SHA"; then
@@ -179,8 +191,8 @@ fi
 
 # GEF: pinned release, checksum-verified
 if ! extras; then :
-elif [ -e gef.py ]; then
-    skip "GEF: already installed"
+elif verified gef.py "$GEF_SHA"; then
+    skip "GEF: already installed ($GEF_V)"
 else
     say "GEF: fetching $GEF_V (checksum-verified)"
     if $CURL -o .new.gef.py "$RAWGH/hugsy/gef/$GEF_V/gef.py" \
@@ -195,8 +207,9 @@ fi
 # package, pinned version; integrity rests on PyPI over TLS (pip
 # resolves dependencies, so there is no single artifact to checksum).
 if ! extras; then :
-elif [ -x bin/coding-style-check ]; then
-    skip "coding-style-check: already installed"
+elif [ -x bin/coding-style-check ] \
+    && [ -d "pylib/epita_coding_style-$ECS_V.dist-info" ]; then
+    skip "coding-style-check: already installed ($ECS_V)"
 else
     say "coding-style-check: fetching epita-coding-style $ECS_V (PyPI, pinned)"
     set -- /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt
@@ -220,8 +233,8 @@ fi
 # ignore: appends school-provided files from exercise PDFs to .gitignore
 # (KazeTachinuu/epita-gitignore, pinned commit, checksum-verified)
 if ! extras; then :
-elif [ -x bin/ignore ]; then
-    skip "ignore: already installed"
+elif verified bin/ignore "$IGN_SHA"; then
+    skip "ignore: already installed ($(printf %.7s "$IGN_PIN"))"
 else
     say "ignore: epita-gitignore @ $(printf %.7s "$IGN_PIN") (verified)"
     if $CURL -o .new.ignore \

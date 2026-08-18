@@ -116,8 +116,9 @@ kit() {
             printf "${Y}[-]${N} kit: version unknown, run: kit update\n"
             return 1
         fi
+        # released PIN on master; only a real 40-hex sha is trusted
         latest=$(curl -fsSL --max-time 3 "$raw/master/setup.sh" \
-                     2>/dev/null | sed -n 's/^PIN=//p')
+                     2>/dev/null | sed -n 's/^PIN=\([0-9a-f]\{40\}\)$/\1/p')
         if [ -z "$latest" ]; then
             printf "${Y}[-]${N} kit: offline, cannot check\n"; return 1
         elif [ "$cur" = "$latest" ]; then
