@@ -32,6 +32,8 @@ RG_V=15.2.0
 RG_SHA=33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c
 FD_V=10.4.2
 FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
+BAT_V=0.26.1
+BAT_SHA=0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191
 TLRC_V=1.13.1
 TLRC_SHA=e63b80e180b956ae2114c39d7fb10e607ffaa46b6d8c370d90868389a228584d
 GEF_V=2026.01
@@ -172,6 +174,10 @@ fetch_bin fd "v$FD_V" \
     "$GH/sharkdp/fd/releases/download/v$FD_V\
 /fd-v$FD_V-x86_64-unknown-linux-musl.tar.gz" \
     "$FD_SHA" "fd-v$FD_V-x86_64-unknown-linux-musl/fd"
+fetch_bin bat "v$BAT_V" \
+    "$GH/sharkdp/bat/releases/download/v$BAT_V\
+/bat-v$BAT_V-x86_64-unknown-linux-musl.tar.gz" \
+    "$BAT_SHA" "bat-v$BAT_V-x86_64-unknown-linux-musl/bat"
 fetch_bin tldr "v$TLRC_V (tlrc)" \
     "$GH/tldr-pages/tlrc/releases/download/v$TLRC_V\
 /tlrc-v$TLRC_V-x86_64-unknown-linux-musl.tar.gz" \

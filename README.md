@@ -25,12 +25,14 @@ Log out, log back in. Re-run any time to update.
   your `.gitignore` ([epita-gitignore](https://github.com/KazeTachinuu/epita-gitignore))
 - **gdb**: history, pretty-print, GEF
 - **search**: fzf (fuzzy `Ctrl-R` history, `Ctrl-T` files), fd, ripgrep,
-  readline prefix history search on the arrows
+  `bat` (syntax-highlighted file viewer), `tldr`, readline prefix
+  history search on the arrows
 - **tmux**, **alacritty**, **starship** with my prompt config
 - **`kit`**: one-screen cheatsheet of all of the above
 
 Configs are fetched from a pinned commit; binaries (starship, fzf, fd,
-rg, GEF) are checksum-verified. `PIE_MINIMAL=1` skips the downloads.
+rg, bat, tldr, GEF) are checksum-verified. `PIE_MINIMAL=1` skips the
+downloads.
 
 ## Exams
 

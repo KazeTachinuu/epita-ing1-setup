@@ -16,6 +16,7 @@ search
   rg word                     grep the repo
   fd name                     find files
   tldr cmd                    examples for a command
+  bat file.c                  view a file, syntax-highlighted
   Ctrl-R                      fuzzy history
   Ctrl-T / Alt-C              fuzzy file insert / fuzzy cd
 vim
