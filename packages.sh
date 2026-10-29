@@ -27,11 +27,15 @@ if command -v apt-get >/dev/null; then
     want="build-essential gdb valgrind clangd clang-format libcriterion-dev
           lcov vim git curl python3 python3-pip tmux xsel binutils file"
     inst="apt-get install --no-install-recommends" yes=-y
+    # installed, whatever is selected for it (hold, or purge after
+    # dpkg refused)
     installed() {
         dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' \
-            | awk '$1 == "ii" { print $2 }' | sort -u
+            | awk 'substr($1, 2, 1) == "i" { print $2 }' | sort -u
     }
-    mark="apt-mark auto" rm="apt-get purge" drop="apt-get autoremove --purge"
+    # dpkg, not apt-get: refuses to remove what another package needs,
+    # where apt-get would remove that package too
+    mark="apt-mark auto" rm="dpkg --purge" drop="apt-get autoremove --purge"
     # a kit package stays only if something depends on it: one the user's
     # packages merely recommend or suggest (gdb: libc6-dbg, git: patch)
     # was not theirs before the kit either
@@ -46,7 +50,8 @@ elif command -v pacman >/dev/null; then
           python-pip tmux xsel binutils file"
     inst="pacman -S --needed" yes=--noconfirm
     installed() { pacman -Qq | sort -u; }
-    mark="pacman -D --asdeps" rm="pacman -R" drop='pacman -Rs $(pacman -Qdttq)'
+    mark="pacman -D --asdeps" rm="pacman -R --noconfirm"
+    drop='pacman -Rs $(pacman -Qdttq)'
     # -tt: likewise, an optional dependency (python: python-pip) can go
     orphans() { pacman -Qdttq; }
 else
@@ -85,10 +90,13 @@ remove() {
     as_root $mark "$@" >/dev/null
     # pacman lists only the leaves: repeat until none of the kit's is left
     while gone=$(orphans | grep -xF -e "$kit"); do
-        as_root $rm $yes $gone || break
+        as_root $rm $gone || break
     done
     n=$#
     set -- $(installed | grep -xF -e "$kit")
+    # dpkg leaves the ones it refused selected for purge
+    [ $pm = pacman ] || [ $# = 0 ] \
+        || printf '%s install\n' "$@" | as_root dpkg --set-selections
     say "system packages: removed $((n - $#))"
     [ $# = 0 ] || { warn "kept $*: still needed by other packages"; return 1; }
 }

@@ -125,6 +125,10 @@ if [ "$(id -u)" = 0 ]; then
         dep=lldb
         pacman -S --noconfirm --needed $dep >/dev/null
     fi
+    # and nothing else needs it (pulled in by a recommends): still the
+    # user's, uninstall must not take it along with the kit's packages
+    if [ $PM = apt ]; then apt-mark auto $dep >/dev/null
+    else pacman -D --asdeps $dep >/dev/null; fi
     awk -F "$TAB" '$1 == "pkg" { print $3 }' "$J" | sort -u > /tmp/kitpkgs
     bash -ic 'kit uninstall' > /tmp/pout 2>&1 </dev/null; rc=$?
     chk "exit 1: kept what $dep needs" [ $rc = 1 ]
@@ -139,6 +143,8 @@ if [ "$(id -u)" = 0 ]; then
             /tmp/pout | tr ' ' '\n' | sort)" = "$still" ]
     }
     chk "the kit's packages $dep needs are kept and reported" reported
+    [ $PM = pacman ] || chk "the kept ones are not left selected for purge" \
+        not sh -c 'dpkg --get-selections | grep -qw -e deinstall -e purge'
     # the kept ones are dependencies now: they go with $dep
     if [ $PM = apt ]; then
         apt-get purge -y -qq --autoremove \
