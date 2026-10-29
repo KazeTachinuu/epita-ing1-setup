@@ -40,6 +40,23 @@ Configs are fetched from a pinned commit; binaries (starship, fzf, fd,
 rg, bat, tldr, GEF) are checksum-verified. `PIE_MINIMAL=1` skips the
 downloads.
 
+## Anywhere
+
+The same command works on any Debian, Ubuntu or Arch machine, VM or
+container (x86_64, aarch64). With no AFS the kit goes to
+`~/.local/share/epita-kit` and adds one line to your `~/.bashrc`.
+
+As root, or with sudo (asked once), it also installs the system packages
+it uses: gcc, clangd, gdb, valgrind, criterion, vim, tmux, ...
+`KIT_PACKAGES=no` skips them. Run it as yourself, not `| sudo sh`.
+
+```sh
+kit uninstall
+```
+
+Removes the kit, its `~/.bashrc` line and the packages it installed, and
+puts back the files it replaced.
+
 ## Exams
 
 Exam machines have no AFS and no network; nothing above exists there.
