@@ -11,7 +11,8 @@ KIT_MODE="${KIT_MODE:-pie}"
 DOT="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}"
 
 # journal <type> <field>...: record one change made outside the kit home
-# as a TAB-separated line in $KIT_JOURNAL, for uninstall.sh to undo.
+# (link, line, dir) as a TAB-separated line in $KIT_JOURNAL, for
+# uninstall.sh to undo.
 # Set by setup.sh in standalone only: a PIE login never writes one.
 journal() {
     [ -n "${KIT_JOURNAL:-}" ] || return 0
@@ -123,6 +124,8 @@ if command -v git >/dev/null 2>&1; then
             head=$(git -C "$d" rev-parse -q --verify HEAD 2>/dev/null)
             [ "$head" = "$pin" ] && continue
             t="$PLUG/../.new.${repo##*/}.$$"
+            # kit uninstalled meanwhile: git init would recreate the dirs
+            [ -d "$PLUG" ] || break
             rm -rf "$t"
             # a stalled transfer aborts instead of hanging until logout
             if git init -q "$t" &&
@@ -139,8 +142,11 @@ if command -v git >/dev/null 2>&1; then
     ) >/dev/null 2>&1 &
 fi
 
-# XDG-path configs, same backup semantics
-mkdir -p "$HOME/.config/tmux" "$HOME/.config/alacritty" 2>/dev/null
+# XDG-path configs, same backup semantics. Each directory made here is
+# journaled, for uninstall to remove again if it is left empty.
+for d in "$HOME/.config" "$HOME/.config/tmux" "$HOME/.config/alacritty"; do
+    [ -d "$d" ] || { mkdir "$d" 2>/dev/null && journal dir "$d"; }
+done
 link tmux.conf "$HOME/.config/tmux/tmux.conf"
 link alacritty.toml "$HOME/.config/alacritty/alacritty.toml"
 link starship.toml "$HOME/.config/starship.toml"

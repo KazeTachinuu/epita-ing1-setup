@@ -110,7 +110,8 @@ command -v fd >/dev/null \
     && export FZF_DEFAULT_COMMAND='fd --type f' \
               FZF_CTRL_T_COMMAND='fd --type f' FZF_ALT_C_COMMAND='fd --type d'
 
-# kit: cheatsheet; kit status: check for updates; kit update: reinstall
+# kit: cheatsheet; kit status: check for updates; kit update: reinstall;
+# kit uninstall: remove the kit, put back what it replaced
 kit() {
     local d="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}" f cur latest
     f="$d/cheatsheet"
@@ -118,6 +119,13 @@ kit() {
     case "${1:-}" in
     update)
         curl -fsSL "$raw/master/setup.sh" | sh; return ;;
+    uninstall)
+        # gone once it ran: a second call in this same shell lands here
+        if [ -r "$d/uninstall.sh" ]; then
+            KIT_DIR="$d" sh "$d/uninstall.sh"
+        else
+            echo 'kit: nothing to uninstall'
+        fi; return ;;
     status)
         # same markers as setup.sh: [*] info [=] converged [-] warn
         local B='\033[1;34m' Y='\033[1;33m' D='\033[2m' N='\033[0m'

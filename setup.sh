@@ -21,7 +21,7 @@ GH=https://github.com
 BASE="${PIE_BASE:-$RAWGH/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
 FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
-       gdbinit inputrc tmux.conf alacritty.toml"
+       gdbinit inputrc tmux.conf alacritty.toml uninstall.sh"
 
 STARSHIP_V=1.26.0
 STARSHIP_SHA=b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3
@@ -107,6 +107,21 @@ DOT="$KIT_DIR"
 if [ "$mode" = afs ] && [ -L "$AFS" ] && [ ! -e "$AFS" ]; then
     say "no AFS mounted: using a local $AFS directory instead"
     rm "$AFS"
+fi
+# standalone: the kit home's parents that do not exist yet (a fresh
+# account has no ~/.local) are journaled as created, so uninstall leaves
+# no empty directories behind
+if [ "$mode" = standalone ] && [ ! -e "$DOT" ]; then
+    new= d=$(dirname "$DOT")
+    while [ ! -e "$d" ]; do
+        new="$d
+$new"
+        d=$(dirname "$d")
+    done
+    mkdir -p "$DOT"
+    printf '%s' "$new" | while IFS= read -r d; do
+        printf 'dir\t%s\n' "$d"
+    done >> "$KIT_JOURNAL"
 fi
 mkdir -p "$DOT"
 cd "$DOT"

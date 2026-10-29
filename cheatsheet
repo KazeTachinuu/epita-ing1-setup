@@ -36,6 +36,7 @@ tmux
 kit
   kit status                  installed vs latest (checked once per boot)
   kit update                  fetch and install the latest kit
+  kit uninstall               remove the kit, put back what it replaced
 
 i3 (stock, identical on exams)
   Super+Enter / Super+d       terminal / launcher

@@ -149,5 +149,33 @@ HOME=$H AFS_DIR=$H/afs $RUN "$H/afs/.confs/install.sh"
 chk "~/.ssh left alone" sh -c '[ ! -L "$1/.ssh" ] && [ -f "$1/.ssh/id" ]' _ "$H"
 chk "kit links still made" [ "$(readlink "$H/.vimrc")" = "$H/afs/.confs/vimrc" ]
 
+echo "-- T12 uninstall on the PIE layout: the CRI files back, user data kept"
+# setup.sh's first run over the CRI skeleton: the files it overwrites are
+# copied to .confs.backup, its extras land next to the configs
+H=$(mkafs t12); A=$H/afs; C=$A/.confs
+mkdir -p "$A/.confs.backup" "$C/bin" "$C/pylib"
+cp /cri/bashrc /cri/vimrc /cri/install.sh "$A/.confs.backup/"
+touch "$C/.kit" "$C/gef.py" "$C/bin/rg"
+inst "$H" "$A"
+wait_plugins "$C/vim/pack/kit/start"
+HOME=$H AFS_DIR=$A KIT_DIR=$C $RUN /kit/uninstall.sh > "$W/out12" 2>&1; rc=$?
+chk "exit 0" [ $rc = 0 ]
+[ $rc = 0 ] || cat "$W/out12"
+for f in bashrc vimrc install.sh; do
+    chk "$f is the CRI one again" cmp -s "/cri/$f" "$C/$f"
+done
+chk "firefox profile untouched" \
+    [ "$(cat "$C/mozilla/firefox/abc.default/places.sqlite")" = history ]
+chk "ssh key untouched" [ "$(cat "$C/ssh/id_ed25519")" = key ]
+for f in bin pylib .kit gef.py gdbinit cheatsheet vim/pack/kit; do
+    chk "no $f" [ ! -e "$C/$f" ]
+done
+chk "CRI vim dir kept" [ -d "$C/vim/bundle" ]
+chk "no .confs.backup" [ ! -e "$A/.confs.backup" ]
+chk "~/.vimrc gone or the CRI vimrc" sh -c '
+    [ ! -e "$1" ] && [ ! -L "$1" ] || [ "$(readlink "$1")" = "$2" ]' \
+    _ "$H/.vimrc" "$C/vimrc"
+chk "no dangling links" [ -z "$(find "$H" "$C" -xtype l)" ]
+
 echo "== $pass passed, $fail failed"
 [ $fail = 0 ]
