@@ -15,8 +15,10 @@ set confirm off
 python
 import os
 _afs = os.environ.get('AFS_DIR', '~/afs')
-for _gef in ('~/.pie/gef.py', _afs + '/.confs/gef.py'):
-    _gef = os.path.expanduser(_gef)
+# KIT_DIR (the kit home off the PIE) is unset on the PIE: skipped there
+_dirs = (os.environ.get('KIT_DIR'), '~/.pie', _afs + '/.confs')
+for _d in filter(None, _dirs):
+    _gef = os.path.expanduser(_d + '/gef.py')
     if os.path.exists(_gef):
         gdb.execute(f'source {_gef}')
         break

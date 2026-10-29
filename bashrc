@@ -92,9 +92,10 @@ submit() {
 # nix extras (see install.sh):
 [ -r ~/.nix-profile/share/fzf/key-bindings.bash ] &&
     . ~/.nix-profile/share/fzf/key-bindings.bash
-# extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus.
+# extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus,
+# the kit home off the PIE. KIT_DIR: set by the standalone ~/.bashrc line;
 # AFS_DIR: set by the PIE (users-groups.nix), same default as setup.sh
-_kitd="${AFS_DIR:-$HOME/afs}/.confs"
+_kitd="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}"
 [ -d "$_kitd/bin" ] && PATH="$_kitd/bin:$PATH"
 [ -d ~/.pie/bin ] && PATH="$HOME/.pie/bin:$PATH"
 command -v starship >/dev/null && eval "$(starship init bash)"
@@ -111,7 +112,7 @@ command -v fd >/dev/null \
 
 # kit: cheatsheet; kit status: check for updates; kit update: reinstall
 kit() {
-    local d="${AFS_DIR:-$HOME/afs}/.confs" f cur latest
+    local d="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}" f cur latest
     f="$d/cheatsheet"
     local raw=https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup
     case "${1:-}" in

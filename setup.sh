@@ -3,8 +3,9 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/master/setup.sh | sh
 #
-# Everything installs to ~/afs/.confs; the PIE reapplies it at every
-# login on every machine. Idempotent, safe to re-run.
+# On the PIE everything installs to ~/afs/.confs and the PIE reapplies it
+# at every login on every machine; anywhere else (no AFS) it installs to
+# ~/.local/share/epita-kit, linked once. Idempotent, safe to re-run.
 #
 #   PIE_MINIMAL=1  configs only, skip all optional downloads
 #   PIE_BASE=url   fetch configs from another location (testing)
@@ -19,7 +20,6 @@ RAWGH=https://raw.githubusercontent.com
 GH=https://github.com
 BASE="${PIE_BASE:-$RAWGH/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
-DOT="$AFS/.confs"
 FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
        gdbinit inputrc tmux.conf alacritty.toml"
 
@@ -52,6 +52,26 @@ skip()     { printf "${D}[=]${N} ${D}%s${N}\n" "$1"; }
 warn()     { printf "${Y}[-]${N} %s\n" "$1"; }
 extras()   { [ "${PIE_MINIMAL:-0}" != 1 ]; }
 verified() { printf '%s  %s\n' "$2" "$1" | sha256sum -c - >/dev/null 2>&1; }
+fstype()   { df -PT "$1" 2>/dev/null | awk 'NR==2 {print $2}'; }
+
+# detect_mode: where the kit lives, first match wins.
+#   pie         ~/afs is PAM's symlink into the AFS cell
+#   sshfs       the PIE AFS mounted from home over sshfs
+#   afs         an AFS layout without the PIE: asked for with AFS_DIR, or
+#               already installed (a from-home user whose mount is down
+#               must never be silently reinstalled as standalone)
+#   standalone  anything else: a machine with no AFS at all
+detect_mode() {
+    case "$(readlink "$AFS")" in /afs/*) echo pie; return ;; esac
+    if [ -d "$AFS/.confs" ] && [ "$(fstype "$AFS/.confs")" = fuse.sshfs ]
+    then
+        echo sshfs
+    elif [ -n "${AFS_DIR:-}" ] || [ -e "$AFS/.confs/.kit" ]; then
+        echo afs
+    else
+        echo standalone
+    fi
+}
 
 # every download aborts on a stalled connection instead of hanging
 CURL_OPTS="--connect-timeout 5 --speed-limit 1 --speed-time 30 --retry 1"
@@ -65,9 +85,19 @@ main() {
 
 printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
-# no AFS here (VM, standalone machine): a dangling ~/afs symlink becomes
-# a real local directory so the same paths work everywhere
-if [ -L "$AFS" ] && [ ! -e "$AFS" ]; then
+mode=$(detect_mode)
+if [ "$mode" = standalone ]; then
+    KIT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/epita-kit"
+    say "no AFS: installing to $KIT_DIR"
+else
+    KIT_DIR="$AFS/.confs"
+fi
+DOT="$KIT_DIR"
+
+# AFS layout without AFS mounted (VM, PIE home copied elsewhere): a
+# dangling ~/afs symlink becomes a real local directory so the same paths
+# work everywhere
+if [ "$mode" = afs ] && [ -L "$AFS" ] && [ ! -e "$AFS" ]; then
     say "no AFS mounted: using a local $AFS directory instead"
     rm "$AFS"
 fi
@@ -77,8 +107,10 @@ cd "$DOT"
 # first run over a .confs this kit did not create: back up only the files
 # we are about to overwrite. A full cp -a of the tree would crawl over
 # sshfs (old vim-plugin .git repos, pylib: thousands of tiny files); their
-# other files are left untouched in place.
-if [ ! -e .kit ] && [ ! -e "$AFS/.confs.backup" ]; then
+# other files are left untouched in place. Standalone has no prior .confs:
+# the files it replaces in $HOME are moved aside by install.sh's link.
+if [ "$mode" != standalone ] && [ ! -e .kit ] \
+    && [ ! -e "$AFS/.confs.backup" ]; then
     for f in $FILES; do
         [ -e "$f" ] || continue
         mkdir -p "$AFS/.confs.backup"
@@ -115,13 +147,13 @@ fi
 # install configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
 say "configs: installing into \$HOME (vim plugins clone in background)..."
-AFS_DIR="$AFS" ./install.sh
+KIT_MODE="$mode" KIT_DIR="$KIT_DIR" AFS_DIR="$AFS" ./install.sh
 say "configs: installed"
 
 # extras are machine-generated: over sshfs they live locally (WAN reads
-# at every prompt/run hurt); on campus they stay on AFS as before
-fstype=$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')
-if [ "$fstype" = "fuse.sshfs" ]; then
+# at every prompt/run hurt); on campus they stay on AFS as before, and
+# standalone keeps them in the kit home
+if [ "$mode" = sshfs ]; then
     EXTRAS="$HOME/.pie"
     say "extras: sshfs AFS detected, installing to $EXTRAS (local)"
 else

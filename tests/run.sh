@@ -6,9 +6,14 @@
 #   tests/run.sh t-install.sh     one suite
 #   REV=HEAD~1 tests/run.sh ...   against a committed version instead
 #   SH=bash|dash|busybox-ash      shell running install.sh (default dash)
+#   IMAGE=debian:bookworm|ubuntu:24.04|ubuntu:22.04|archlinux
+#                                 stock distro for t-standalone.sh
+#                                 (default debian:bookworm)
 #
 # Suites: t-install.sh (PIE login, plugin clones), t-sshfs.sh (real FUSE
-# mount, from-home case), t-setup.sh (real GitHub/PyPI downloads).
+# mount, from-home case), t-setup.sh (real GitHub/PyPI downloads), run by
+# default; t-standalone.sh (setup.sh on a plain distro, no AFS), run by
+# name.
 set -eu
 T=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(dirname "$T")
@@ -31,11 +36,18 @@ if [ -n "${REV:-}" ]; then
 fi
 
 run() {
-    case $1 in t-sshfs.sh) opts=--privileged ;; *) opts="-u student" ;; esac
+    img=kit-bench
+    case $1 in
+    t-sshfs.sh) opts=--privileged ;;
+    # a stock image, not the bench: the suite starts as root to install
+    # what a fresh machine lacks, then drops to its own user
+    t-standalone.sh) opts= img=${IMAGE:-debian:bookworm} ;;
+    *) opts="-u student" ;;
+    esac
     # shellcheck disable=SC2086
     docker run --rm --platform linux/amd64 $opts -e SH="${SH:-dash}" \
         -v "$KIT:/kit:ro" -v "$CACHE/cri:/cri:ro" -v "$T:/tests:ro" \
-        kit-bench timeout 900 bash "/tests/$1"
+        "$img" timeout 900 bash "/tests/$1"
 }
 [ $# -gt 0 ] || set -- t-install.sh t-sshfs.sh t-setup.sh
 rc=0

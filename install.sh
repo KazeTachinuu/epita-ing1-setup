@@ -4,8 +4,11 @@
 # the PIE executes ~/afs/.confs/install.sh with AFS_DIR=$HOME/afs at each
 # login. Must therefore be idempotent, instant when converged, and never
 # fail the login.
+# KIT_MODE, KIT_DIR: passed by setup.sh (pie|sshfs|afs|standalone, the kit
+# home); PAM passes neither, so a login is pie on $AFS_DIR/.confs.
 
-DOT="${AFS_DIR:-$HOME/afs}/.confs"
+KIT_MODE="${KIT_MODE:-pie}"
+DOT="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}"
 
 # link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
 # no-op when already correct. A pre-existing real file or dir is moved
@@ -26,7 +29,20 @@ link() {
 }
 
 link vimrc
-link bashrc
+# standalone: ~/.bashrc is the user's own (distro default or theirs) and
+# stays theirs; the kit appends one marked line sourcing its bashrc, once
+if [ "$KIT_MODE" = standalone ]; then
+    rc="$HOME/.bashrc"
+    if ! grep -q '# epita-kit$' "$rc" 2>/dev/null; then
+        # a last line without its newline would swallow ours
+        [ -s "$rc" ] && [ -n "$(tail -c 1 "$rc")" ] && echo >> "$rc"
+        printf "[ -r '%s/bashrc' ] && export KIT_DIR='%s' && . '%s/bashrc'" \
+            "$DOT" "$DOT" "$DOT" >> "$rc"
+        echo ' # epita-kit' >> "$rc"
+    fi
+else
+    link bashrc
+fi
 link gitconfig    # not shipped; linked if kept on AFS (CRI convention)
 link clang-format
 link gdbinit
