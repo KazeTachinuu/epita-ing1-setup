@@ -10,6 +10,14 @@
 KIT_MODE="${KIT_MODE:-pie}"
 DOT="${KIT_DIR:-${AFS_DIR:-$HOME/afs}/.confs}"
 
+# journal <type> <field>...: record one change made outside the kit home
+# as a TAB-separated line in $KIT_JOURNAL, for uninstall.sh to undo.
+# Set by setup.sh in standalone only: a PIE login never writes one.
+journal() {
+    [ -n "${KIT_JOURNAL:-}" ] || return 0
+    (IFS=$(printf '\t'); printf '%s\n' "$*") >> "$KIT_JOURNAL"
+}
+
 # link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
 # no-op when already correct. A pre-existing real file or dir is moved
 # aside, never deleted: to *.local-backup, or a dated name when that one
@@ -24,8 +32,10 @@ link() {
             bak="$bak.$(date +%Y%m%d-%H%M%S)"
         fi
         mv "$dst" "$bak" 2>/dev/null || return 0
+    else
+        bak=
     fi
-    ln -sfn "$src" "$dst"
+    ln -sfn "$src" "$dst" && journal link "$dst" "$src" "$bak"
 }
 
 link vimrc
@@ -36,9 +46,9 @@ if [ "$KIT_MODE" = standalone ]; then
     if ! grep -q '# epita-kit$' "$rc" 2>/dev/null; then
         # a last line without its newline would swallow ours
         [ -s "$rc" ] && [ -n "$(tail -c 1 "$rc")" ] && echo >> "$rc"
-        printf "[ -r '%s/bashrc' ] && export KIT_DIR='%s' && . '%s/bashrc'" \
-            "$DOT" "$DOT" "$DOT" >> "$rc"
-        echo ' # epita-kit' >> "$rc"
+        line="[ -r '$DOT/bashrc' ] && export KIT_DIR='$DOT' &&"
+        line="$line . '$DOT/bashrc' # epita-kit"
+        printf '%s\n' "$line" >> "$rc" && journal line "$rc" "$line"
     fi
 else
     link bashrc

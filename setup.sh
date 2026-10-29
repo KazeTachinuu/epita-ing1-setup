@@ -92,6 +92,9 @@ printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 mode=$(detect_mode)
 if [ "$mode" = standalone ]; then
     KIT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/epita-kit"
+    # what install.sh and packages.sh change outside the kit home is
+    # recorded here, for kit uninstall to undo
+    export KIT_JOURNAL="$KIT_DIR/.journal"
     say "no AFS: installing to $KIT_DIR"
 else
     KIT_DIR="$AFS/.confs"

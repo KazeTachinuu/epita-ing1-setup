@@ -76,6 +76,9 @@ chk "vim loads lsp/vsnip/clang-format ($out)" [ "$out" = 222 ]
 echo "-- T2 second login is a no-op"
 before=$(snap "$H"); inst "$H" "$A"; sleep 2; after=$(snap "$H")
 chk "home unchanged" [ "$before" = "$after" ]
+# the journal is standalone-only: a PIE login never writes one
+chk "no journal in the AFS cell or home" \
+    [ -z "$(find /afs/cri.epita.fr "$H" -name .journal 2>/dev/null)" ]
 
 echo "-- T3 home with real files: moved aside, never lost"
 H=$(mkafs t3); A=$H/afs; mkdir -p "$H/.mozilla" "$H/.ssh"

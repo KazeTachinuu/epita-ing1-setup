@@ -42,6 +42,16 @@ chk "own ~/.vimrc kept as backup" \
 chk "~/.bashrc still a regular file" [ -f ~/.bashrc -a ! -L ~/.bashrc ]
 chk "~/.bashrc ends with the kit line" \
     [ "$(tail -n 1 ~/.bashrc)" = "$LINE" ]
+J=$K/.journal
+TAB=$(printf '\t')
+chk "journal: ~/.vimrc link with its backup" \
+    grep -qxF "link$TAB$HOME/.vimrc$TAB$K/vimrc$TAB$HOME/.vimrc.local-backup" \
+    "$J"
+chk "journal: one line entry, for ~/.bashrc" \
+    [ "$(grep "^line$TAB" "$J" 2>/dev/null | cut -f 2)" = "$HOME/.bashrc" ]
+chk "journal: the line entry is the kit line" \
+    grep -qxF "line$TAB$HOME/.bashrc$TAB$LINE" "$J"
+cp "$J" /tmp/journal1 2>/dev/null
 
 echo "-- A2 bashrc finds the kit home"
 out=$(bash -ic 'echo $KIT_DIR; command -v rg; kit | head -1' \
@@ -56,6 +66,10 @@ echo "-- A3 rerun converges"
 setup; rc=$?
 chk "exit 0" [ $rc = 0 ]
 chk "kit line appended once" [ "$(grep -c '# epita-kit$' ~/.bashrc)" = 1 ]
+same_journal() {
+    [ -s "$J" ] && [ "$(cksum < "$J")" = "$(cksum < /tmp/journal1)" ]
+}
+chk "journal unchanged (converged run writes nothing)" same_journal
 chk "still no ~/afs" [ ! -e ~/afs -a ! -L ~/afs ]
 
 echo "-- A4 PIE home copied elsewhere: dangling ~/afs into /afs"
