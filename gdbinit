@@ -14,7 +14,8 @@ set confirm off
 # optional GEF (see README extras): inert unless installed by setup.sh
 python
 import os
-for _gef in ('~/.pie/gef.py', '~/afs/.confs/gef.py'):
+_afs = os.environ.get('AFS_DIR', '~/afs')
+for _gef in ('~/.pie/gef.py', _afs + '/.confs/gef.py'):
     _gef = os.path.expanduser(_gef)
     if os.path.exists(_gef):
         gdb.execute(f'source {_gef}')

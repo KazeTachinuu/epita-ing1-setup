@@ -10,6 +10,12 @@ curl -fsSL https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup/maste
 
 Log out, log back in. Re-run any time to update.
 
+The kit's `install.sh` replaces the CRI default one
+([epita-default-confs](https://github.com/epita/epita-default-confs))
+and keeps everything it linked from AFS (Firefox profile, `~/.ssh`,
+`~/.config`, ...): a strict superset. Files it replaces are moved to
+`*.local-backup`, never deleted.
+
 ![the kit cheatsheet on the PIE](docs/pie.png)
 
 - **vim**: clangd LSP (definition, references, rename, inline

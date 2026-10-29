@@ -69,14 +69,21 @@ cccov() {
 # tree and requires the annotated tag, then pushes with tags.
 submit() {
     [ $# -eq 1 ] || { echo 'usage: submit <tagname>' >&2; return 2; }
+    local top bad
+    top=$(git rev-parse --show-toplevel) || return 1
     [ -z "$(git status --porcelain)" ] \
         || { echo 'submit: uncommitted changes, commit first' >&2; return 1; }
-    if [ -e "$(git rev-parse --show-toplevel)/.clang-format" ] &&
-        command -v clang-format >/dev/null; then
-        git ls-files '*.c' '*.h' |
-            xargs -r clang-format --Werror --dry-run 2>/dev/null ||
-            { echo 'submit: unformatted, run: clang-format -i *.c *.h' >&2
-              return 1; }
+    # the whole repo, wherever you run it from (ls-files alone only lists
+    # the current subdirectory)
+    if [ -e "$top/.clang-format" ] && command -v clang-format >/dev/null; then
+        bad=$(cd "$top" && git ls-files -z '*.c' '*.h' |
+            xargs -0r sh -c 'for f do clang-format --Werror --dry-run "$f" \
+                >/dev/null 2>&1 || echo "$f"; done' sh)
+        if [ -n "$bad" ]; then
+            echo 'submit: unformatted (paths from the repo root), run:' >&2
+            echo "  clang-format -i $(printf %s "$bad" | tr '\n' ' ')" >&2
+            return 1
+        fi
     fi
     git tag -a "$1" -m "$1" && git push --follow-tags
 }
@@ -85,12 +92,14 @@ submit() {
 # nix extras (see install.sh):
 [ -r ~/.nix-profile/share/fzf/key-bindings.bash ] &&
     . ~/.nix-profile/share/fzf/key-bindings.bash
-# extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus
-[ -d ~/afs/.confs/bin ] && PATH="$HOME/afs/.confs/bin:$PATH"
+# extras (installed by setup.sh): ~/.pie local over sshfs, AFS on campus.
+# AFS_DIR: set by the PIE (users-groups.nix), same default as setup.sh
+_kitd="${AFS_DIR:-$HOME/afs}/.confs"
+[ -d "$_kitd/bin" ] && PATH="$_kitd/bin:$PATH"
 [ -d ~/.pie/bin ] && PATH="$HOME/.pie/bin:$PATH"
 command -v starship >/dev/null && eval "$(starship init bash)"
 # skipped when the nix-extras copy above already loaded the bindings
-for _kb in ~/.pie/fzf-key-bindings.bash ~/afs/.confs/fzf-key-bindings.bash; do
+for _kb in ~/.pie/fzf-key-bindings.bash "$_kitd/fzf-key-bindings.bash"; do
     command -v fzf >/dev/null && [ -r "$_kb" ] \
         && ! declare -F __fzf_history__ >/dev/null && . "$_kb"
 done; unset _kb
@@ -102,7 +111,8 @@ command -v fd >/dev/null \
 
 # kit: cheatsheet; kit status: check for updates; kit update: reinstall
 kit() {
-    local d=~/afs/.confs f=~/afs/.confs/cheatsheet cur latest
+    local d="${AFS_DIR:-$HOME/afs}/.confs" f cur latest
+    f="$d/cheatsheet"
     local raw=https://raw.githubusercontent.com/KazeTachinuu/epita-ing1-setup
     case "${1:-}" in
     update)
@@ -141,10 +151,11 @@ kit() {
         cat "$f"
     fi
 }
-if [ -t 0 ] && [ -r ~/afs/.confs/cheatsheet ] &&
+if [ -t 0 ] && [ -r "$_kitd/cheatsheet" ] &&
     [ ! -e "/tmp/.kit-hint-$UID" ]; then
     touch "/tmp/.kit-hint-$UID" 2>/dev/null
     printf '\e[2mkit: type "kit" for the cheatsheet\e[0m\n'
     # once per boot: mention a kit update if one is out (3s cap, offline-safe)
     kit status 2>/dev/null | grep 'update available' || true
 fi
+unset _kitd

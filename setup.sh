@@ -142,18 +142,23 @@ fetch_bin() {
     ver=${2#v}; ver=${ver%% *}
     if [ -x "bin/$1" ]; then
         v=$("bin/$1" --version 2>/dev/null | head -1 || echo unknown)
-        case "$v" in *"$ver"*)
+        # the pin as a whole version token: 0.26.1 must not match 0.26.10
+        case " $v " in *[!0-9.]"$ver"[!0-9.]*)
             skip "$1: already installed ($v)"; return 0 ;;
         esac
         say "$1: updating to $2 (had: $v)"
     else
         say "$1: fetching $2 (checksum-verified)"
     fi
+    # every step is checked: under set -e a bare failure (a release whose
+    # archive layout changed) would abort all the extras after this one
+    rm -rf ".new.$1" ".new.$1.tgz"
     if $CURL -o ".new.$1.tgz" "$3" && verified ".new.$1.tgz" "$4" \
-        && mkdir -p ".new.$1" bin && tar xzf ".new.$1.tgz" -C ".new.$1"; then
-        mv ".new.$1/$5" "bin/$1"
+        && mkdir -p ".new.$1" bin && tar xzf ".new.$1.tgz" -C ".new.$1" \
+        && [ -f ".new.$1/$5" ] && mv ".new.$1/$5" "bin/$1"; then
+        rm -rf ".new.$1" ".new.$1.tgz"
     else
-        warn "$1: fetch or checksum failed, skipped"
+        warn "$1: fetch, checksum or unpack failed, skipped"
     fi
 }
 

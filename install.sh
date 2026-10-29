@@ -8,14 +8,19 @@
 DOT="${AFS_DIR:-$HOME/afs}/.confs"
 
 # link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
-# no-op when already correct. A pre-existing real file is kept once
-# as *.local-backup.
+# no-op when already correct. A pre-existing real file or dir is moved
+# aside, never deleted: to *.local-backup, or a dated name when that one
+# is taken. If it cannot be moved, nothing is linked over it.
 link() {
     src="$DOT/$1" dst="${2:-$HOME/.$1}"
     [ -e "$src" ] || return 0
     [ "$(readlink "$dst" 2>/dev/null)" = "$src" ] && return 0
     if [ -e "$dst" ] && [ ! -L "$dst" ]; then
-        mv "$dst" "$dst.local-backup" 2>/dev/null
+        bak="$dst.local-backup"
+        if [ -e "$bak" ] || [ -L "$bak" ]; then
+            bak="$bak.$(date +%Y%m%d-%H%M%S)"
+        fi
+        mv "$dst" "$bak" 2>/dev/null || return 0
     fi
     ln -sfn "$src" "$dst"
 }
@@ -34,19 +39,42 @@ link inputrc
 fstype=$(df -PT "$DOT" 2>/dev/null | awk 'NR==2 {print $2}')
 if [ "$fstype" = "fuse.sshfs" ]; then
     [ -L "$HOME/.vim" ] && rm -f "$HOME/.vim"
+    # mark the dir as ours only when we create it: a ~/.vim that already
+    # exists is the user's own and must never be deleted below
+    if [ ! -e "$HOME/.vim" ]; then
+        mkdir -p "$HOME/.vim" && touch "$HOME/.vim/.kit-created"
+    fi
     PLUG="$HOME/.vim/pack/kit/start"
     mkdir -p "$PLUG"
-    touch "$HOME/.vim/.kit-copy"
 else
-    # back on campus: drop the local dir, restore the canonical symlink
-    [ -e "$HOME/.vim/.kit-copy" ] && rm -rf "$HOME/.vim"
+    # back on campus: drop the local dir only if the kit created it (older
+    # kits used a .kit-copy marker, also put in users' own dirs: those are
+    # no longer trusted and link moves the dir aside instead), then
+    # restore the canonical symlink
+    if [ ! -L "$HOME/.vim" ] && [ -e "$HOME/.vim/.kit-created" ]; then
+        rm -rf "$HOME/.vim"
+    fi
     PLUG="$DOT/vim/pack/kit/start"
     mkdir -p "$PLUG"
     link vim
+    # the CRI default install.sh (github.com/epita/epita-default-confs),
+    # which this one replaces, also linked these from AFS: the Firefox
+    # profile, ssh keys, ~/.config... Dropping them wiped them at each
+    # login. Real PIE only, where PAM makes ~/afs a symlink into /afs
+    # (nixpie users-groups.nix): anywhere else home persists and these
+    # are the user's own.
+    case "$(readlink "${AFS_DIR:-$HOME/afs}")" in /afs/*)
+        for f in mozilla ssh config emacs gitignore Xdefaults msmtprc \
+            muttrc signature slrnrc jnewsrc; do
+            link "$f"
+        done ;;
+    esac
 fi
 
-# One-time plugin fetches, pinned to exact commits and verified after
-# checkout (removed on any mismatch: no unpinned code ever persists).
+# Plugin fetches, pinned to exact commits: a plugin is in place only when
+# its checkout is at its pin. Anything else (a clone cut short by the
+# logout pkill, an older pin) is fetched again into a temp dir outside
+# start/ (vim would load a half-cloned dir) and swapped in once verified.
 # Backgrounded and silent: a login must never wait on the network.
 if command -v git >/dev/null 2>&1; then
     (
@@ -54,6 +82,9 @@ if command -v git >/dev/null 2>&1; then
         # with a normal cert setup the glob misses and git's default works
         set -- /nix/store/*nss-cacert*/etc/ssl/certs/ca-bundle.crt
         [ -e "$1" ] && export GIT_SSL_CAINFO="${GIT_SSL_CAINFO:-$1}"
+        # sweep temp dirs left by killed sessions (not a concurrent login's)
+        find "$PLUG/.." -maxdepth 1 -name '.new.*' -mmin +30 \
+            -exec rm -rf {} + 2>/dev/null
         for entry in \
         "yegappan/lsp aac0b4671f8868fb40619c6eb54ed254fdb69dc2" \
         "LunarWatcher/auto-pairs 94d0577fea5c0b3dc71dbd2df7667dcffb830b3b" \
@@ -63,13 +94,21 @@ if command -v git >/dev/null 2>&1; then
         do
             repo=${entry% *}; pin=${entry#* }
             d="$PLUG/${repo##*/}"
-            [ -d "$d" ] && continue
-            git init -q "$d" &&
-                git -C "$d" fetch -q --depth 1 \
+            head=$(git -C "$d" rev-parse -q --verify HEAD 2>/dev/null)
+            [ "$head" = "$pin" ] && continue
+            t="$PLUG/../.new.${repo##*/}.$$"
+            rm -rf "$t"
+            # a stalled transfer aborts instead of hanging until logout
+            if git init -q "$t" &&
+                git -C "$t" -c http.lowSpeedLimit=1000 \
+                    -c http.lowSpeedTime=30 fetch -q --depth 1 \
                     "https://github.com/$repo" "$pin" &&
-                git -C "$d" checkout -q FETCH_HEAD &&
-                [ "$(git -C "$d" rev-parse HEAD)" = "$pin" ] ||
-                rm -rf "$d"
+                git -C "$t" checkout -q FETCH_HEAD &&
+                [ "$(git -C "$t" rev-parse HEAD)" = "$pin" ]
+            then
+                rm -rf "$d" && mv "$t" "$d"
+            fi
+            rm -rf "$t"
         done
     ) >/dev/null 2>&1 &
 fi
