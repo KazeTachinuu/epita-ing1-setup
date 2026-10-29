@@ -8,11 +8,11 @@ ok()  { pass=$((pass+1)); printf '  \033[32mPASS\033[0m %s\n' "$1"; }
 ko()  { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
 chk() { local m=$1; shift; if "$@"; then ok "$m"; else ko "$m"; fi; }
 W=$(mktemp -d)
-PINS="lsp:aac0b4671f8868fb40619c6eb54ed254fdb69dc2
+PINS="lsp:c741b2f1afb42b9f267824dac4049674908f4a41
 auto-pairs:94d0577fea5c0b3dc71dbd2df7667dcffb830b3b
 vim-vsnip:9bcfabea653abdcdac584283b5097c3f8760abaa
 vim-clang-format:6b791825ff478061ad1c57b21bb1ed5a5fd0eb29
-friendly-snippets:6cd7280adead7f586db6fccbd15d2cac7e2188b9"
+friendly-snippets:b2ea5c41a150ba72fb656eedb4ed0a86d138d945"
 
 # a fresh PIE login: the CRI skeleton with the kit's files over it (what
 # setup.sh does) in the cell, ~/afs a symlink into /afs as PAM makes it.
