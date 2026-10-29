@@ -1,29 +1,115 @@
 #!/bin/bash
 # setup.sh on a plain distro (no AFS, no PIE): the standalone layout under
 # ~/.local/share/epita-kit. Starts as root in a stock image (IMAGE= in
-# run.sh), installs what a fresh machine lacks, then re-runs itself as an
-# unprivileged user for the checks. Configs are served from /kit
-# (PIE_BASE), standing in for raw.githubusercontent.com at the PIN.
-if [ "$(id -u)" = 0 ]; then
-    if command -v apt-get >/dev/null; then
-        apt-get update -qq && DEBIAN_FRONTEND=noninteractive \
-            apt-get install -y -qq --no-install-recommends curl \
-            ca-certificates python3 git sudo vim >/dev/null
-    elif command -v pacman >/dev/null; then
-        pacman -Sy --noconfirm --needed curl ca-certificates python git \
-            sudo vim >/dev/null
-    fi || { echo "cannot install test prerequisites"; exit 1; }
-    useradd -m -s /bin/bash student || exit 1
-    (cd /kit && exec python3 -m http.server 8000 >/dev/null 2>&1) &
-    sleep 1
-    exec sudo -u student -H env PIE_BASE=http://localhost:8000 \
-        KIT_PACKAGES=no bash "$0"
-fi
-
+# run.sh), installs what a fresh machine lacks, checks the system package
+# step (P), then re-runs itself as an unprivileged user for the home
+# checks (A). Configs are served from /kit (PIE_BASE), standing in for
+# raw.githubusercontent.com at the PIN.
 pass=0 fail=0
 ok()  { pass=$((pass+1)); printf '  \033[32mPASS\033[0m %s\n' "$1"; }
 ko()  { fail=$((fail+1)); printf '  \033[31mFAIL\033[0m %s\n' "$1"; }
 chk() { local m=$1; shift; if "$@"; then ok "$m"; else ko "$m"; fi; }
+not() { ! "$@"; }
+on_path() { command -v "$1" >/dev/null; }
+
+if [ "$(id -u)" = 0 ]; then
+    if command -v apt-get >/dev/null; then
+        PM=apt
+        apt-get update -qq && DEBIAN_FRONTEND=noninteractive \
+            apt-get install -y -qq --no-install-recommends curl \
+            ca-certificates python3 git sudo vim >/dev/null
+    elif command -v pacman >/dev/null; then
+        PM=pacman
+        # pacman's syscall sandbox (seccomp) fails under qemu emulation
+        sed -i 's/^#DisableSandboxSyscalls/DisableSandboxSyscalls/' \
+            /etc/pacman.conf
+        pacman -Sy --noconfirm --needed curl ca-certificates python git \
+            sudo vim >/dev/null
+    fi || { echo "cannot install test prerequisites"; exit 1; }
+    useradd -m -s /bin/bash student || exit 1
+    echo 'student ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/student
+    (cd /kit && exec python3 -m http.server 8000 >/dev/null 2>&1) &
+    sleep 1
+    export PIE_BASE=http://localhost:8000
+    as_student() { sudo -u student -H env PIE_BASE=$PIE_BASE "$@"; }
+
+    echo "== packages [$(. /etc/os-release && echo "$ID $VERSION_ID")]"
+    if [ $PM = pacman ]; then
+        echo "-- P0 archlinux, no synced package database"
+        rm -f /var/lib/pacman/sync/*
+        sh /kit/setup.sh > /tmp/pout 2>&1 </dev/null; rc=$?
+        chk "exit 0" [ $rc = 0 ]
+        chk "package step stops: run: pacman -Syu" \
+            grep -q 'run: pacman -Syu' /tmp/pout
+        chk "home part still installed" \
+            [ "$(readlink ~/.vimrc)" = ~/.local/share/epita-kit/vimrc ]
+        pacman -Sy >/dev/null 2>&1
+    fi
+
+    echo "-- P1 root, no tty: packages installed"
+    sh /kit/setup.sh > /tmp/pout 2>&1 </dev/null; rc=$?
+    chk "exit 0" [ $rc = 0 ]
+    [ $rc = 0 ] || cat /tmp/pout
+    for c in gcc clangd clang-format gdb valgrind vim; do
+        chk "$c on PATH" on_path $c
+    done
+    mkdir -p /tmp/ct
+    printf '%s\n' '#include <criterion/criterion.h>' \
+        'Test(kit, works) { cr_assert(1); }' > /tmp/ct/t.c
+    # bounded: criterion's a.out can hang under x86_64 emulation (seen on
+    # ubuntu:24.04 amd64 on an arm64 host, not when run natively)
+    criterion_runs() {
+        bash -ic 'cd /tmp/ct && cctest t.c && timeout -s KILL 120 ./a.out' \
+            >/dev/null 2>&1 </dev/null
+    }
+    chk "cctest builds a criterion test, ./a.out passes" criterion_runs
+    TAB=$(printf '\t') J=~/.local/share/epita-kit/.journal
+    clangd=clangd; [ $PM = pacman ] && clangd=clang
+    chk "journal: pkg line for $clangd" grep -qxF "pkg$TAB$PM$TAB$clangd" "$J"
+    chk "journal: no pkg line for curl (had it before)" \
+        not grep -q "^pkg$TAB$PM${TAB}curl$" "$J"
+    vimv=$(vim --version | sed -n '1s/^VIM - Vi IMproved \([0-9]*\).*/\1/p')
+    if [ "$vimv" -lt 9 ]; then
+        chk "vim $vimv: warned, LSP and snippets off" \
+            grep -q 'LSP and snippets are off' /tmp/pout
+    else
+        chk "vim $vimv: no old-vim warning" \
+            not grep -q 'LSP and snippets are off' /tmp/pout
+    fi
+    chk "env works (kit cheatsheet)" \
+        grep -q 'EPITA PIE kit' <<<"$(bash -ic kit 2>/dev/null </dev/null)"
+
+    echo "-- P2 sudo user, no tty: nothing installed, the command printed"
+    # one kit package missing again, for the plain user's runs
+    if [ $PM = apt ]; then apt-get purge -y -qq tmux >/dev/null
+    else pacman -R --noconfirm tmux >/dev/null; fi
+    H=$(as_student mktemp -d)
+    as_student HOME="$H" sh /kit/setup.sh > /tmp/pout 2>&1 </dev/null; rc=$?
+    chk "exit 0" [ $rc = 0 ]
+    chk "tmux still not installed" not on_path tmux
+    cmd="sudo apt-get install"; [ $PM = pacman ] && cmd="sudo pacman -S"
+    chk "prints: $cmd ... tmux" grep -q "$cmd.* tmux" /tmp/pout
+
+    echo "-- P3 sudo user on a terminal, answers y"
+    printf 'y\n' | as_student HOME="$H" \
+        script -qc 'sh /kit/setup.sh' /dev/null > /tmp/pout 2>&1; rc=$?
+    chk "exit 0" [ $rc = 0 ]
+    chk "asked once" [ "$(grep -c 'install these 1 packages? \[y/N\]' \
+        /tmp/pout)" = 1 ]
+    chk "tmux installed" on_path tmux
+
+    echo "-- P4 curl | sudo sh: refused, run it as yourself"
+    as_student sh -c 'curl -fsSL $PIE_BASE/setup.sh | sudo sh' \
+        > /tmp/pout 2>&1 </dev/null; rc=$?
+    chk "exit 1" [ $rc = 1 ]
+    chk "says: run it as yourself" grep -q \
+        'run it as yourself: the kit asks for sudo when it needs it' /tmp/pout
+    echo "== packages: $pass passed, $fail failed"
+
+    as_student KIT_PACKAGES=no bash "$0" && [ $fail = 0 ]
+    exit
+fi
+
 K=$HOME/.local/share/epita-kit
 LINE="[ -r '$K/bashrc' ] && export KIT_DIR='$K' && . '$K/bashrc' # epita-kit"
 setup() { sh /kit/setup.sh > /tmp/out 2>&1; }

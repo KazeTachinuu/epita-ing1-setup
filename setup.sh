@@ -21,7 +21,7 @@ GH=https://github.com
 BASE="${PIE_BASE:-$RAWGH/KazeTachinuu/epita-ing1-setup/$PIN}"
 AFS="${AFS_DIR:-$HOME/afs}"
 FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
-       gdbinit inputrc tmux.conf alacritty.toml uninstall.sh"
+       gdbinit inputrc tmux.conf alacritty.toml packages.sh uninstall.sh"
 
 STARSHIP_V=1.26.0
 STARSHIP_SHA_X86_64=b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3
@@ -112,6 +112,13 @@ main() {
 
 printf "${B}==>${N} EPITA PIE starter kit (pinned @ %.7s)\n" "$PIN"
 
+# curl | sudo sh would put the home part in root's home: the kit is run
+# as the user, and asks for sudo itself for the system packages
+if [ "$(id -u)" = 0 ] && [ -n "${SUDO_USER:-}" ]; then
+    warn "run it as yourself: the kit asks for sudo when it needs it"
+    exit 1
+fi
+
 mode=$(detect_mode)
 if [ "$mode" = standalone ]; then
     KIT_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/epita-kit"
@@ -188,6 +195,10 @@ else
     chmod +x install.sh
     printf '%s\n' "$PIN" > .kit    # version stamp, read by `kit status`
 fi
+
+# standalone: the system packages first, install.sh's plugin clones need
+# git (the PIE and the AFS layout keep theirs)
+[ "$mode" != standalone ] || sh packages.sh install
 
 # install configs before the optional downloads: a network failure below
 # must never leave configs fetched but not installed
