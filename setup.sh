@@ -80,20 +80,16 @@ fstype()   { df -PT "$1" 2>/dev/null | awk 'NR==2 {print $2}'; }
 # detect_mode: where the kit lives, first match wins.
 #   pie         ~/afs is PAM's symlink into the AFS cell
 #   sshfs       the PIE AFS mounted from home over sshfs
-#   afs         an AFS layout without the PIE: asked for with AFS_DIR,
-#               any ~/afs (an install from before, or a from-home user
-#               whose mount is down: an empty mount point, never to be
-#               silently reinstalled as standalone), or a dangling link
-#               into /afs (PIE home copied to a VM: main turns it into a
-#               local ~/afs)
+#   afs         an AFS layout without the PIE: AFS_DIR set, or a ~/afs
+#               directory (a VM, or an sshfs mount point while it is down)
 #   standalone  anything else: a machine with no AFS at all
 detect_mode() {
     case "$(readlink "$AFS")" in
-    /afs/*) if [ -e "$AFS" ]; then echo pie; else echo afs; fi; return ;;
+    /afs/*) [ -d "$AFS" ] && { echo pie; return; } ;;
     esac
     if [ "$(fstype "$AFS")" = fuse.sshfs ]; then
         echo sshfs
-    elif [ -n "${AFS_DIR:-}" ] || [ -e "$AFS" ]; then
+    elif [ -n "${AFS_DIR:-}" ] || [ -d "$AFS" ]; then
         echo afs
     else
         echo standalone
@@ -131,13 +127,6 @@ else
 fi
 DOT="$KIT_DIR"
 
-# AFS layout without AFS mounted (VM, PIE home copied elsewhere): a
-# dangling ~/afs symlink becomes a real local directory so the same paths
-# work everywhere
-if [ "$mode" = afs ] && [ -L "$AFS" ] && [ ! -e "$AFS" ]; then
-    say "no AFS mounted: using a local $AFS directory instead"
-    rm "$AFS"
-fi
 # standalone: the kit home's parents that do not exist yet (a fresh
 # account has no ~/.local) are journaled as created, so uninstall leaves
 # no empty directories behind
@@ -158,7 +147,7 @@ cd "$DOT"
 
 # first run over a .confs this kit did not create: back up only the files
 # we are about to overwrite. A full cp -a of the tree would crawl over
-# sshfs (old vim-plugin .git repos, pylib: thousands of tiny files); their
+# sshfs (vim-plugin .git repos, pylib: thousands of tiny files); their
 # other files are left untouched in place. Standalone has no prior .confs:
 # the files it replaces in $HOME are moved aside by install.sh's link.
 if [ "$mode" != standalone ] && [ ! -e .kit ] \
@@ -207,7 +196,7 @@ KIT_MODE="$mode" KIT_DIR="$KIT_DIR" AFS_DIR="$AFS" ./install.sh
 say "configs: installed"
 
 # extras are machine-generated: over sshfs they live locally (WAN reads
-# at every prompt/run hurt); on campus they stay on AFS as before, and
+# at every prompt/run hurt); on campus they stay on AFS, and
 # standalone keeps them in the kit home
 if [ "$mode" = sshfs ]; then
     EXTRAS="$HOME/.pie"

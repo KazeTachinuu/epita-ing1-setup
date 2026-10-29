@@ -1,6 +1,5 @@
 #!/bin/sh
-# Run the kit's tests in throwaway x86_64 containers (docker; on arm64
-# hosts they run emulated, slower).
+# Run the kit's tests in throwaway docker containers.
 #
 #   tests/run.sh                  every suite against the working tree
 #   tests/run.sh t-install.sh     one suite

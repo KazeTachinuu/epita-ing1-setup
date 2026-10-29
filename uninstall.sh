@@ -1,11 +1,9 @@
 #!/bin/sh
 # kit uninstall: remove what the kit added, put back what it replaced.
-# Run as `sh "$KIT_DIR/uninstall.sh"` (bashrc's `kit uninstall`). Works
-# offline from the kit home alone, whatever kit version installed it:
+# Run as `sh "$KIT_DIR/uninstall.sh"` (bashrc's `kit uninstall`), offline:
 #   standalone  replays $KIT_DIR/.journal backwards (written by setup.sh,
 #               install.sh and packages.sh), then removes the kit home
-#   AFS layout  (.confs, no journal, also installs from before journals)
-#               removes the kit's fixed set of files from .confs and moves
+#   AFS layout  removes the kit's fixed set of files from .confs and moves
 #               .confs.backup back; other files in .confs are never touched
 # Exit 0 when done or nothing to do, 1 when something the user changed
 # since install was left in place (each printed as [-] kept <path>: <why>).
@@ -60,21 +58,22 @@ undo_line() {
 }
 
 # vim's undo history is the user's: in standalone ~/.vim is the kit's
-# vim dir, so its undo/ moves out to a real ~/.vim/undo before the kit
-# home goes (a file of the same name already there wins). A ~/.vim put
-# back as the user's link to nowhere (or a file) gets ~/.vim-undo instead.
+# vim dir, so its undo/ moves out to ~/.vim/undo (~/.vim-undo when the
+# restored ~/.vim is not a directory) before the kit home goes; a file
+# of the same name already there wins. Fails if it cannot move it all.
 keep_undo() {
     u="$KIT_DIR/vim/undo"
     [ -n "$(ls -A "$u" 2>/dev/null)" ] || return 0
     there "$HOME/.vim" || mkdir "$HOME/.vim"
     to=$HOME/.vim/undo
-    [ -d "$HOME/.vim" ] || { to=$HOME/.vim-undo; say "vim undo history: $to"; }
-    if ! there "$to"; then
-        mv "$u" "$to" && return
-    fi
+    [ -d "$HOME/.vim" ] || to=$HOME/.vim-undo
+    mkdir -p "$to" 2>/dev/null
     for f in "$u"/* "$u"/.[!.]*; do
-        there "$f" && ! there "$to/${f##*/}" && mv "$f" "$to/"
+        there "$f" || continue
+        if there "$to/${f##*/}"; then rm -f "$f"; else mv "$f" "$to/"; fi
     done
+    rmdir "$u" 2>/dev/null || { kept "$u" "could not move it to $to"; return 1; }
+    [ "$to" = "$HOME/.vim/undo" ] || say "vim undo history: $to"
 }
 
 uninstall_journal() {
@@ -94,7 +93,8 @@ EOF
     # packages.sh in the kit home knows the package manager and when to
     # ask for sudo, as it did at install
     [ -z "$pkgs" ] || sh "$KIT_DIR/packages.sh" remove $pkgs || rc=1
-    keep_undo
+    # the kit home stays while it holds the user's undo history
+    keep_undo || return
     # never rm -rf something that is not a kit home
     case $KIT_DIR in /?*/?*) ;; *) kept "$KIT_DIR" "not a kit home"; return ;;
     esac
@@ -124,8 +124,8 @@ uninstall_afs() {
     rmdir "$KIT_DIR/vim/pack" "$KIT_DIR/vim" 2>/dev/null
     # over sshfs the extras and plugins live locally: ~/.pie, and ~/.vim
     # when install.sh made it (undo history in it stays)
-    if [ "${KIT_MODE:-}" = sshfs ] || [ "$(df -PT "$KIT_DIR" 2>/dev/null \
-        | awk 'NR==2 {print $2}')" = fuse.sshfs ]; then
+    if [ "$(df -PT "$KIT_DIR" 2>/dev/null | awk 'NR==2 {print $2}')" \
+        = fuse.sshfs ]; then
         rm -rf "$HOME/.pie"
         if [ ! -L "$HOME/.vim" ] && [ -e "$HOME/.vim/.kit-created" ]; then
             rm -rf "$HOME/.vim/pack/kit" "$HOME/.vim/.kit-created"
@@ -151,11 +151,19 @@ uninstall_afs() {
         "$HOME/.config/starship.toml"; do
         [ -L "$l" ] && in_fixed "$(readlink "$l")" || continue
         if there "$l.local-backup"; then
-            rm -f "$l" && mv "$l.local-backup" "$l" && say "restored $l"
+            rm -f "$l"
+            if mv "$l.local-backup" "$l"; then say "restored $l"
+            else kept "$l.local-backup" "could not move it back"; fi
         elif [ ! -e "$l" ]; then
             rm -f "$l"
         fi
+        for b in "$l".local-backup.*; do
+            there "$b" && kept "$b" "an older copy of yours"
+        done
     done
+    # the directories the kit made, if nothing else is in them
+    rmdir "$HOME/.config/tmux" "$HOME/.config/alacritty" "$KIT_DIR" \
+        2>/dev/null
     say "removed the kit from $KIT_DIR"
 }
 
@@ -164,9 +172,8 @@ uninstall_afs() {
 main() {
     if [ -f "$KIT_DIR/.journal" ]; then
         uninstall_journal
-    elif case $KIT_DIR in */.confs) true ;; *) false ;; esac &&
-        { [ -e "$KIT_DIR/.kit" ] ||
-          [ -e "${KIT_DIR%/.confs}/.confs.backup" ]; }; then
+    elif case $KIT_DIR in */.confs) [ -e "$KIT_DIR/.kit" ] ;; *) false ;; esac
+    then
         uninstall_afs
     else
         skip "nothing to uninstall"

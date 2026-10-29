@@ -69,12 +69,6 @@ chk "~/.vim is the AFS link again" [ "$(readlink "$H/.vim")" = "$A/.confs/vim" ]
 chk "no stray backup of the kit copy" [ ! -e "$H/.vim.local-backup" ]
 rm -rf "$A" "$H/.vim" "$H/.vim.local-backup"*
 
-echo "-- U4 dir marked .kit-copy by an older kit: moved, not deleted"
-mkdir -p "$H/.vim"; echo mine > "$H/.vim/own"; touch "$H/.vim/.kit-copy"
-localafs; inst
-chk "own file survives" sh -c '[ -f "$1/.vim/own" ] ||
-    [ -f "$1/.vim.local-backup/own" ]' _ "$H"
-
 echo "== $pass passed, $fail failed"
 [ $fail = 0 ]
 EOS

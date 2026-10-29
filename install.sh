@@ -77,10 +77,8 @@ if [ "$fstype" = "fuse.sshfs" ]; then
     PLUG="$HOME/.vim/pack/kit/start"
     mkdir -p "$PLUG"
 else
-    # back on campus: drop the local dir only if the kit created it (older
-    # kits used a .kit-copy marker, also put in users' own dirs: those are
-    # no longer trusted and link moves the dir aside instead), then
-    # restore the canonical symlink
+    # back on campus: drop the local dir only if the kit created it (a
+    # user's own is moved aside by link), then restore the AFS link
     if [ ! -L "$HOME/.vim" ] && [ -e "$HOME/.vim/.kit-created" ]; then
         rm -rf "$HOME/.vim"
     fi
