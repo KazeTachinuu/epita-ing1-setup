@@ -22,12 +22,15 @@ journal() {
 # link <name> [dst]: symlink dst (default ~/.<name>) -> .confs/<name>,
 # no-op when already correct. A pre-existing real file or dir is moved
 # aside, never deleted: to *.local-backup, or a dated name when that one
-# is taken. If it cannot be moved, nothing is linked over it.
+# is taken. If it cannot be moved, nothing is linked over it. Standalone
+# moves a symlink aside too (the user's dotfiles: stow, home-manager);
+# the PIE replaces links, as the CRI install.sh did.
 link() {
     src="$DOT/$1" dst="${2:-$HOME/.$1}"
     [ -e "$src" ] || return 0
     [ "$(readlink "$dst" 2>/dev/null)" = "$src" ] && return 0
-    if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    if [ -e "$dst" ] && [ ! -L "$dst" ] ||
+        { [ "$KIT_MODE" = standalone ] && [ -L "$dst" ]; }; then
         bak="$dst.local-backup"
         if [ -e "$bak" ] || [ -L "$bak" ]; then
             bak="$bak.$(date +%Y%m%d-%H%M%S)"

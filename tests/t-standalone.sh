@@ -202,6 +202,9 @@ same_home() {
 echo "== standalone [$(. /etc/os-release && echo "$ID $VERSION_ID")]"
 echo "-- A1 first install"
 echo mine > ~/.vimrc
+# dotfiles kept as symlinks (stow), one of them dangling
+mkdir ~/dotfiles && echo 'set editing-mode vi' > ~/dotfiles/inputrc
+ln -s ~/dotfiles/inputrc ~/.inputrc && ln -s ~/dotfiles/gdbinit ~/.gdbinit
 cp ~/.bashrc /tmp/bashrc0
 snapshot > /tmp/snap0
 setup; rc=$?
@@ -212,6 +215,10 @@ chk "kit home has the configs" [ -f "$K/vimrc" ]
 chk "~/.vimrc linked into the kit home" [ "$(readlink ~/.vimrc)" = "$K/vimrc" ]
 chk "own ~/.vimrc kept as backup" \
     grep -qx mine ~/.vimrc.local-backup
+chk "own ~/.inputrc link kept as backup" \
+    [ "$(readlink ~/.inputrc.local-backup)" = ~/dotfiles/inputrc ]
+chk "own dangling ~/.gdbinit link kept as backup" \
+    [ "$(readlink ~/.gdbinit.local-backup)" = ~/dotfiles/gdbinit ]
 # each binary is the machine's own build (the ELF machine of /bin/sh):
 # Docker Desktop runs foreign ones through binfmt emulation, so a
 # working --version alone would pass an x86_64 build on aarch64
@@ -272,12 +279,35 @@ chk "~/.vimrc linked into ~/afs/.confs" \
     [ "$(readlink "$H/.vimrc")" = "$H/afs/.confs/vimrc" ]
 chk "no standalone kit home" [ ! -e "$H/.local/share/epita-kit" ]
 
+echo "-- A4b ~/afs an empty directory (sshfs mount down), own dotfiles"
+# the AFS layout, never standalone; uninstall puts the files back
+H=$(mktemp -d); mkdir "$H/afs"
+echo '# mine' > "$H/.bashrc"; echo mine > "$H/.vimrc"
+HOME=$H sh /kit/setup.sh > /tmp/out4 2>&1; rc=$?
+chk "exit 0" [ $rc = 0 ]
+[ $rc = 0 ] || cat /tmp/out4
+chk "not standalone" not grep -q 'no AFS: installing' /tmp/out4
+chk "~/.vimrc linked into ~/afs/.confs" \
+    [ "$(readlink "$H/.vimrc")" = "$H/afs/.confs/vimrc" ]
+chk "no standalone kit home" [ ! -e "$H/.local/share/epita-kit" ]
+HOME=$H sh "$H/afs/.confs/uninstall.sh" > /tmp/out4 2>&1; rc=$?
+chk "uninstall exit 0" [ $rc = 0 ]
+[ $rc = 0 ] || cat /tmp/out4
+chk "~/.vimrc and ~/.bashrc are the user's own again" sh -c \
+    '[ ! -L "$1/.vimrc" ] && [ "$(cat "$1/.vimrc")" = mine ] &&
+     [ ! -L "$1/.bashrc" ] && [ "$(cat "$1/.bashrc")" = "# mine" ]' _ "$H"
+chk "no backup left behind" \
+    [ ! -e "$H/.vimrc.local-backup" -a ! -e "$H/.bashrc.local-backup" ]
+
 uninstall_checks() {
     chk "exit 0" [ "$1" = 0 ]
     [ "$1" = 0 ] || cat /tmp/out
     chk "~/.vimrc is the user's own again" \
         sh -c '[ ! -L ~/.vimrc ] && [ "$(cat ~/.vimrc)" = mine ]'
     chk "no backup left behind" [ ! -e ~/.vimrc.local-backup ]
+    chk "~/.inputrc, ~/.gdbinit: the user's links again" \
+        [ "$(readlink ~/.inputrc)" = ~/dotfiles/inputrc \
+          -a "$(readlink ~/.gdbinit)" = ~/dotfiles/gdbinit ]
     chk "~/.bashrc: the original plus the user's two lines" \
         bashrc_kept_user_lines
     chk "kit home gone" [ ! -e "$K" ]
@@ -297,7 +327,10 @@ bash -ic 'kit uninstall' > /tmp/out 2>&1 </dev/null
 uninstall_checks $?
 
 echo "-- A7 a link the user repointed is kept; undo history survives"
-# uninstalled right away: the plugin clones setup started still run
+# ~/.vim is the user's dangling link: it comes back, the history moves
+# to ~/.vim-undo. Uninstalled right away: the plugin clones setup
+# started still run.
+ln -s ~/dotfiles/vim ~/.vim
 setup
 echo x > /tmp/f.c
 timeout 60 vim -Nu ~/.vimrc -es -c 'normal Ay' -c wq /tmp/f.c \
@@ -315,8 +348,9 @@ chk "the rest uninstalled" sh -c '[ ! -e "$1" ] && [ ! -L ~/.vimrc ]' _ "$K"
 sleep 30
 chk "plugin clones still running do not bring the kit home back" \
     [ ! -e "$K" ]
-chk "undo history kept in ~/.vim/undo" \
-    [ -n "$(ls -A ~/.vim/undo 2>/dev/null)" ]
+chk "~/.vim the user's link again" [ "$(readlink ~/.vim)" = ~/dotfiles/vim ]
+chk "undo history kept in ~/.vim-undo" \
+    [ -n "$(ls -A ~/.vim-undo 2>/dev/null)" ]
 
 echo "-- A8 uninstall again: nothing to do"
 chk "second kit uninstall: exit 0" grep -qx 'rc=0' /tmp/out

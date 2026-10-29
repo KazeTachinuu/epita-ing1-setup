@@ -61,17 +61,19 @@ undo_line() {
 
 # vim's undo history is the user's: in standalone ~/.vim is the kit's
 # vim dir, so its undo/ moves out to a real ~/.vim/undo before the kit
-# home goes (a file of the same name already there wins)
+# home goes (a file of the same name already there wins). A ~/.vim put
+# back as the user's link to nowhere (or a file) gets ~/.vim-undo instead.
 keep_undo() {
     u="$KIT_DIR/vim/undo"
     [ -n "$(ls -A "$u" 2>/dev/null)" ] || return 0
     there "$HOME/.vim" || mkdir "$HOME/.vim"
-    if ! there "$HOME/.vim/undo"; then
-        mv "$u" "$HOME/.vim/undo" && return
+    to=$HOME/.vim/undo
+    [ -d "$HOME/.vim" ] || { to=$HOME/.vim-undo; say "vim undo history: $to"; }
+    if ! there "$to"; then
+        mv "$u" "$to" && return
     fi
     for f in "$u"/* "$u"/.[!.]*; do
-        there "$f" && ! there "$HOME/.vim/undo/${f##*/}" \
-            && mv "$f" "$HOME/.vim/undo/"
+        there "$f" && ! there "$to/${f##*/}" && mv "$f" "$to/"
     done
 }
 
@@ -140,14 +142,19 @@ uninstall_afs() {
         fi
     done
     rmdir "$afs/.confs.backup" 2>/dev/null
-    # the kit's links into .confs: one whose file came back from the
-    # backup stays (the CRI install.sh links it too), one left dangling
-    # goes. ~/.config may be a link into AFS: its kit links are named.
+    # the kit's links into .confs: the file install.sh moved aside comes
+    # back; else a link whose file came back from the backup stays (the
+    # CRI install.sh links it too), one left dangling goes. ~/.config may
+    # be a link into AFS: its kit links are named.
     for l in "$HOME"/.[!.]* "$HOME/.config/tmux/tmux.conf" \
         "$HOME/.config/alacritty/alacritty.toml" \
         "$HOME/.config/starship.toml"; do
-        [ -L "$l" ] && [ ! -e "$l" ] && in_fixed "$(readlink "$l")" \
-            && rm -f "$l"
+        [ -L "$l" ] && in_fixed "$(readlink "$l")" || continue
+        if there "$l.local-backup"; then
+            rm -f "$l" && mv "$l.local-backup" "$l" && say "restored $l"
+        elif [ ! -e "$l" ]; then
+            rm -f "$l"
+        fi
     done
     say "removed the kit from $KIT_DIR"
 }

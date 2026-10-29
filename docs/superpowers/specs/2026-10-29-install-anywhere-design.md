@@ -51,8 +51,8 @@ one command must take it all back out cleanly.
 | Mode | How it is recognized | Kit home | Re-applied |
 |------|----------------------|----------|------------|
 | PIE campus | `~/afs` (AFS_DIR) is a symlink into `/afs/` (made by PAM) | `$AFS/.confs` | by PAM at each login (unchanged) |
-| PIE from home | `$AFS/.confs` is on `fuse.sshfs` | `$AFS/.confs`, extras in `~/.pie` | unchanged |
-| AFS layout, no PIE | `AFS_DIR` set explicitly, or `$AFS/.confs/.kit` already exists (an install of the current shape, e.g. a from-home user whose sshfs mount is down) | `$AFS/.confs` | as today |
+| PIE from home | `$AFS` is on `fuse.sshfs` | `$AFS/.confs`, extras in `~/.pie` | unchanged |
+| AFS layout, no PIE | `AFS_DIR` set explicitly, or `$AFS` exists (an earlier install, or a from-home user whose sshfs mount is down: an empty mount point) | `$AFS/.confs` | as today |
 | Standalone | anything else | `${XDG_DATA_HOME:-~/.local/share}/epita-kit` | once; links are permanent |
 
 Rules are checked top to bottom. The "AFS layout, no PIE" row (designer's
