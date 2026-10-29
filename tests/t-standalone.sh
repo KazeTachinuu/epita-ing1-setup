@@ -17,14 +17,14 @@ if [ "$(id -u)" = 0 ]; then
         PM=apt
         apt-get update -qq && DEBIAN_FRONTEND=noninteractive \
             apt-get install -y -qq --no-install-recommends curl \
-            ca-certificates python3 git sudo vim >/dev/null
+            ca-certificates python3 git sudo vim gdb >/dev/null
     elif command -v pacman >/dev/null; then
         PM=pacman
         # pacman's syscall sandbox (seccomp) fails under qemu emulation
         sed -i 's/^#DisableSandboxSyscalls/DisableSandboxSyscalls/' \
             /etc/pacman.conf
         pacman -Sy --noconfirm --needed curl ca-certificates python git \
-            sudo vim >/dev/null
+            sudo vim gdb diffutils >/dev/null
     fi || { echo "cannot install test prerequisites"; exit 1; }
     useradd -m -s /bin/bash student || exit 1
     echo 'student ALL=(ALL) NOPASSWD: ALL' > /etc/sudoers.d/student
@@ -32,6 +32,15 @@ if [ "$(id -u)" = 0 ]; then
     sleep 1
     export PIE_BASE=http://localhost:8000
     as_student() { sudo -u student -H env PIE_BASE=$PIE_BASE "$@"; }
+
+    # the package names installed, gdb among them: the user's own
+    if [ $PM = apt ]; then
+        pkgs() { dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' \
+                     | awk '$1 == "ii" { print $2 }' | sort -u; }
+    else
+        pkgs() { pacman -Qq | sort -u; }
+    fi
+    pkgs > /tmp/pkgs0
 
     echo "== packages [$(. /etc/os-release && echo "$ID $VERSION_ID")]"
     if [ $PM = pacman ]; then
@@ -104,6 +113,44 @@ if [ "$(id -u)" = 0 ]; then
     chk "exit 1" [ $rc = 1 ]
     chk "says: run it as yourself" grep -q \
         'run it as yourself: the kit asks for sudo when it needs it' /tmp/pout
+
+    echo "-- P5 root uninstall: the kit's packages go, the user's stay"
+    # installed by hand after setup, it needs some of the kit's packages
+    # (clang-tidy: the clang libs; lldb: clang-libs, llvm-libs)
+    if [ $PM = apt ]; then
+        dep=clang-tidy
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            --no-install-recommends $dep >/dev/null
+    else
+        dep=lldb
+        pacman -S --noconfirm --needed $dep >/dev/null
+    fi
+    awk -F "$TAB" '$1 == "pkg" { print $3 }' "$J" | sort -u > /tmp/kitpkgs
+    bash -ic 'kit uninstall' > /tmp/pout 2>&1 </dev/null; rc=$?
+    chk "exit 1: kept what $dep needs" [ $rc = 1 ]
+    [ $rc = 1 ] || cat /tmp/pout
+    chk "gdb, there before the kit, still installed" on_path gdb
+    chk "clangd gone" not on_path clangd
+    chk "$dep still works" sh -c "$dep --version >/dev/null"
+    still=$(pkgs | grep -xF -f /tmp/kitpkgs)
+    reported() {
+        [ -n "$still" ] && [ "$(sed -n \
+            's/.*kept \(.*\): still needed by other packages$/\1/p' \
+            /tmp/pout | tr ' ' '\n' | sort)" = "$still" ]
+    }
+    chk "the kit's packages $dep needs are kept and reported" reported
+    # the kept ones are dependencies now: they go with $dep
+    if [ $PM = apt ]; then
+        apt-get purge -y -qq --autoremove \
+            -o APT::AutoRemove::RecommendsImportant=false \
+            -o APT::AutoRemove::SuggestsImportant=false $dep >/dev/null 2>&1
+    else
+        pacman -Rs --noconfirm $dep >/dev/null
+    fi
+    same_pkgs() { pkgs | diff /tmp/pkgs0 - > /tmp/pkgdiff \
+                      || { cat /tmp/pkgdiff; false; }; }
+    chk "with $dep removed, the package list is the one before setup" \
+        same_pkgs
     echo "== packages: $pass passed, $fail failed"
 
     as_student KIT_PACKAGES=no bash "$0" && [ $fail = 0 ]

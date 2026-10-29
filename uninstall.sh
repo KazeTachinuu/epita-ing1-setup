@@ -2,8 +2,8 @@
 # kit uninstall: remove what the kit added, put back what it replaced.
 # Run as `sh "$KIT_DIR/uninstall.sh"` (bashrc's `kit uninstall`). Works
 # offline from the kit home alone, whatever kit version installed it:
-#   standalone  replays $KIT_DIR/.journal backwards (written by setup.sh
-#               and install.sh), then removes the kit home
+#   standalone  replays $KIT_DIR/.journal backwards (written by setup.sh,
+#               install.sh and packages.sh), then removes the kit home
 #   AFS layout  (.confs, no journal, also installs from before journals)
 #               removes the kit's fixed set of files from .confs and moves
 #               .confs.backup back; other files in .confs are never touched
@@ -79,16 +79,19 @@ uninstall_journal() {
     # newest first: a later action is undone before the one it built on
     entries=$(awk '{ l[NR] = $0 } END { for (i = NR; i; i--) print l[i] }' \
         "$KIT_DIR/.journal")
+    pkgs=
     while IFS=$TAB read -r type a b c; do
         case $type in
         link) undo_link "$a" "$b" "$c" ;;
         line) undo_line "$a" "$b" ;;
+        pkg) pkgs="$pkgs $b" ;;
         esac
     done <<EOF
 $entries
 EOF
-    # (Task 6: the package step, pkg entries, runs here, before the kit
-    # home and its journal are removed)
+    # packages.sh in the kit home knows the package manager and when to
+    # ask for sudo, as it did at install
+    [ -z "$pkgs" ] || sh "$KIT_DIR/packages.sh" remove $pkgs || rc=1
     keep_undo
     # never rm -rf something that is not a kit home
     case $KIT_DIR in /?*/?*) ;; *) kept "$KIT_DIR" "not a kit home"; return ;;

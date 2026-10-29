@@ -1,11 +1,15 @@
 #!/bin/sh
-# sh packages.sh install: the system packages the kit relies on (Debian,
-# Ubuntu and Arch families; anything else is left alone, silently). Run
-# by setup.sh in standalone mode. Always exits 0: prints what it did, or
-# the command to run.
-#   KIT_PACKAGES=yes|no  install, or don't, without asking
-#   otherwise            root installs; a sudo user on a terminal is asked
-#                        once; anyone else gets the command to run
+# The system packages the kit relies on (Debian, Ubuntu and Arch
+# families; anything else is left alone, silently).
+#   sh packages.sh install       run by setup.sh in standalone mode; always
+#                                exits 0: prints what it did, or the
+#                                command to run
+#   sh packages.sh remove <pkg>  run by kit uninstall with the journaled
+#                                packages: removes those nothing else needs,
+#                                exits 1 when some are kept
+#   KIT_PACKAGES=yes|no  go ahead, or don't, without asking
+#   otherwise            root goes ahead; a sudo user on a terminal is
+#                        asked once; anyone else gets the command to run
 #   KIT_JOURNAL          each package installed by this run (named or
 #                        pulled in) is recorded as pkg<TAB>apt|pacman<TAB>
 #                        name, for kit uninstall
@@ -27,12 +31,24 @@ if command -v apt-get >/dev/null; then
         dpkg-query -W -f '${db:Status-Abbrev} ${Package}\n' \
             | awk '$1 == "ii" { print $2 }' | sort -u
     }
+    mark="apt-mark auto" rm="apt-get purge" drop="apt-get autoremove --purge"
+    # a kit package stays only if something depends on it: one the user's
+    # packages merely recommend or suggest (gdb: libc6-dbg, git: patch)
+    # was not theirs before the kit either
+    orphans() {
+        apt-get -s -o APT::AutoRemove::RecommendsImportant=false \
+            -o APT::AutoRemove::SuggestsImportant=false autoremove \
+            | awk '$1 == "Remv" { print $2 }'
+    }
 elif command -v pacman >/dev/null; then
     pm=pacman
     want="base-devel gdb valgrind clang criterion lcov vim git curl python
           python-pip tmux xsel binutils file"
     inst="pacman -S --needed" yes=--noconfirm
     installed() { pacman -Qq | sort -u; }
+    mark="pacman -D --asdeps" rm="pacman -R" drop='pacman -Rs $(pacman -Qdttq)'
+    # -tt: likewise, an optional dependency (python: python-pip) can go
+    orphans() { pacman -Qdttq; }
 else
     exit 0
 fi
@@ -42,6 +58,42 @@ sudo=
 # a configuration question
 as_root() { $sudo env DEBIAN_FRONTEND=noninteractive "$@"; }
 
+# allowed <question>: whether to go ahead as root
+allowed() {
+    case ${KIT_PACKAGES:-} in yes) return 0 ;; no) return 1 ;; esac
+    [ -n "$sudo" ] || return 0
+    # curl | sh: stdin is the script, the answer comes from the terminal
+    command -v sudo >/dev/null && { true </dev/tty; } 2>/dev/null \
+        || return 1
+    printf '%s [y/N] ' "$1" >/dev/tty
+    read -r a </dev/tty
+    case $a in [yY]*) ;; *) return 1 ;; esac
+}
+
+# remove <pkg>...: marked as dependencies, the package manager says
+# which ones nothing else needs any more; those go, the rest is kept
+remove() {
+    kit=$(printf '%s\n' "$@")
+    # the user may have removed some since
+    set -- $(installed | grep -xF -e "$kit")
+    [ $# -gt 0 ] || return 0
+    if ! allowed "remove the $# system packages the kit installed?"; then
+        warn "kept $*: not removed without root"
+        warn "to remove them: ${sudo:+sudo }$mark $* && ${sudo:+sudo }$drop"
+        return 1
+    fi
+    as_root $mark "$@" >/dev/null
+    # pacman lists only the leaves: repeat until none of the kit's is left
+    while gone=$(orphans | grep -xF -e "$kit"); do
+        as_root $rm $yes $gone || break
+    done
+    n=$#
+    set -- $(installed | grep -xF -e "$kit")
+    say "system packages: removed $((n - $#))"
+    [ $# = 0 ] || { warn "kept $*: still needed by other packages"; return 1; }
+}
+[ "${1:-}" != remove ] || { shift; remove "$@"; exit; }
+
 before=$(installed)
 missing=$(printf '%s\n' $want | grep -vxF -e "$before")
 set -- $missing
@@ -49,22 +101,7 @@ if [ $# = 0 ]; then
     skip "system packages: all installed"
 else
     warn "system packages missing: $*"
-    go=
-    case ${KIT_PACKAGES:-} in
-    yes) go=1 ;;
-    no) ;;
-    *)
-        if [ -z "$sudo" ]; then
-            go=1
-        # curl | sh: stdin is the script, the answer comes from the terminal
-        elif command -v sudo >/dev/null && { true </dev/tty; } 2>/dev/null
-        then
-            printf 'install these %d packages? [y/N] ' $# >/dev/tty
-            read -r a </dev/tty
-            case $a in [yY]*) go=1 ;; esac
-        fi ;;
-    esac
-    if [ -z "$go" ]; then
+    if ! allowed "install these $# packages?"; then
         warn "to install them: ${sudo:+sudo }$inst $*"
     else
         say "system packages: installing $#"
