@@ -58,5 +58,19 @@ chk "exit 0" [ $rc = 0 ]
 chk "kit line appended once" [ "$(grep -c '# epita-kit$' ~/.bashrc)" = 1 ]
 chk "still no ~/afs" [ ! -e ~/afs -a ! -L ~/afs ]
 
+echo "-- A4 PIE home copied elsewhere: dangling ~/afs into /afs"
+# AFS not mounted, AFS_DIR unset: the link becomes a local ~/afs (the AFS
+# layout), as before standalone mode existed; never a pie-mode abort
+H=$(mktemp -d)
+ln -s /afs/cri.epita.fr/user/s/student "$H/afs"
+HOME=$H sh /kit/setup.sh > /tmp/out4 2>&1; rc=$?
+chk "exit 0" [ $rc = 0 ]
+[ $rc = 0 ] || cat /tmp/out4
+chk "~/afs now a local directory" [ -d "$H/afs" -a ! -L "$H/afs" ]
+chk "configs in ~/afs/.confs" [ -f "$H/afs/.confs/vimrc" ]
+chk "~/.vimrc linked into ~/afs/.confs" \
+    [ "$(readlink "$H/.vimrc")" = "$H/afs/.confs/vimrc" ]
+chk "no standalone kit home" [ ! -e "$H/.local/share/epita-kit" ]
+
 echo "== $pass passed, $fail failed"
 [ $fail = 0 ]

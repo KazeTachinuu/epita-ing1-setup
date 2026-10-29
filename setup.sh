@@ -57,12 +57,16 @@ fstype()   { df -PT "$1" 2>/dev/null | awk 'NR==2 {print $2}'; }
 # detect_mode: where the kit lives, first match wins.
 #   pie         ~/afs is PAM's symlink into the AFS cell
 #   sshfs       the PIE AFS mounted from home over sshfs
-#   afs         an AFS layout without the PIE: asked for with AFS_DIR, or
+#   afs         an AFS layout without the PIE: asked for with AFS_DIR,
 #               already installed (a from-home user whose mount is down
-#               must never be silently reinstalled as standalone)
+#               must never be silently reinstalled as standalone), or a
+#               dangling link into /afs (PIE home copied to a VM: main
+#               turns it into a local ~/afs)
 #   standalone  anything else: a machine with no AFS at all
 detect_mode() {
-    case "$(readlink "$AFS")" in /afs/*) echo pie; return ;; esac
+    case "$(readlink "$AFS")" in
+    /afs/*) if [ -e "$AFS" ]; then echo pie; else echo afs; fi; return ;;
+    esac
     if [ -d "$AFS/.confs" ] && [ "$(fstype "$AFS/.confs")" = fuse.sshfs ]
     then
         echo sshfs
