@@ -43,7 +43,7 @@ chk "now the real 0.26.1" \
     sh -c '"$1/bin/bat" --version | grep -q "bat 0.26.1 "' _ "$E"
 
 echo "-- S4 a release with an unexpected layout skips, the rest goes on"
-sed 's#"bat-v$BAT_V-x86_64-unknown-linux-musl/bat"#"nope/bat"#' \
+sed 's#"bat-v$BAT_V-$ARCH-unknown-linux-musl/bat"#"nope/bat"#' \
     /kit/setup.sh > /tmp/setup-broken.sh
 rm -f "$E/bin/bat" "$E/bin/tldr" "$E/gef.py"
 setup /tmp/setup-broken.sh; rc=$?

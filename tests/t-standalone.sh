@@ -73,6 +73,19 @@ chk "kit home has the configs" [ -f "$K/vimrc" ]
 chk "~/.vimrc linked into the kit home" [ "$(readlink ~/.vimrc)" = "$K/vimrc" ]
 chk "own ~/.vimrc kept as backup" \
     grep -qx mine ~/.vimrc.local-backup
+# each binary is the machine's own build (the ELF machine of /bin/sh):
+# Docker Desktop runs foreign ones through binfmt emulation, so a
+# working --version alone would pass an x86_64 build on aarch64
+native_bin() {
+    [ "$(od -An -j18 -N2 -tx1 "$K/bin/$1")" = \
+        "$(od -An -j18 -N2 -tx1 /bin/sh)" ] \
+        && "$K/bin/$1" --version >/dev/null \
+        || grep -q "$1: no build for $(uname -m), skipped" /tmp/out
+}
+for b in starship fzf rg fd bat tldr; do
+    chk "$b runs, built for $(uname -m) (or has no build for it)" \
+        native_bin "$b"
+done
 chk "~/.bashrc still a regular file" [ -f ~/.bashrc -a ! -L ~/.bashrc ]
 chk "~/.bashrc ends with the kit line" \
     [ "$(tail -n 1 ~/.bashrc)" = "$LINE" ]

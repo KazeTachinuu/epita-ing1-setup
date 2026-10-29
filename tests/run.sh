@@ -9,6 +9,8 @@
 #   IMAGE=debian:bookworm|ubuntu:24.04|ubuntu:22.04|archlinux
 #                                 stock distro for t-standalone.sh
 #                                 (default debian:bookworm)
+#   ARCH=amd64|arm64              platform of that stock image (default
+#                                 amd64)
 #
 # Suites: t-install.sh (PIE login, plugin clones), t-sshfs.sh (real FUSE
 # mount, from-home case), t-setup.sh (real GitHub/PyPI downloads), run by
@@ -36,16 +38,17 @@ if [ -n "${REV:-}" ]; then
 fi
 
 run() {
-    img=kit-bench
+    img=kit-bench plat=linux/amd64
     case $1 in
     t-sshfs.sh) opts=--privileged ;;
     # a stock image, not the bench: the suite starts as root to install
     # what a fresh machine lacks, then drops to its own user
-    t-standalone.sh) opts= img=${IMAGE:-debian:bookworm} ;;
+    t-standalone.sh)
+        opts= img=${IMAGE:-debian:bookworm} plat=linux/${ARCH:-amd64} ;;
     *) opts="-u student" ;;
     esac
     # shellcheck disable=SC2086
-    docker run --rm --platform linux/amd64 $opts -e SH="${SH:-dash}" \
+    docker run --rm --platform "$plat" $opts -e SH="${SH:-dash}" \
         -v "$KIT:/kit:ro" -v "$CACHE/cri:/cri:ro" -v "$T:/tests:ro" \
         "$img" timeout 900 bash "/tests/$1"
 }

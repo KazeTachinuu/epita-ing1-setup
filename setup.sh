@@ -24,23 +24,46 @@ FILES="install.sh cheatsheet clang-format starship.toml vimrc vimrc.exam bashrc
        gdbinit inputrc tmux.conf alacritty.toml uninstall.sh"
 
 STARSHIP_V=1.26.0
-STARSHIP_SHA=b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3
+STARSHIP_SHA_X86_64=b7c232b0e8249d8e55a40beb79c5c43a7d370f3f9408bd215deb0170daeaadf3
+STARSHIP_SHA_AARCH64=dc30189378d2f2e287384e8a692d3f95ad1df64cf0e8c36aa9201516028aed6b
 FZF_V=0.74.2
-FZF_SHA=b3648f48675612b69ee35371cf6dc99ca96d767e89b912d079080916ac8ba8bd
+FZF_SHA_X86_64=b3648f48675612b69ee35371cf6dc99ca96d767e89b912d079080916ac8ba8bd
+FZF_SHA_AARCH64=1373e3f5ed3c468179d4529942ddd96c234bcad1bcacaf238916e26a5234b5b2
 FZF_KB_SHA=89103adb2e29816b0ed8f36814ce4c95945a5f1c7dcd3b0620d2973ea2dbd6ea
 RG_V=15.2.0
-RG_SHA=33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c
+RG_SHA_X86_64=33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c
+RG_SHA_AARCH64=800b1e7206afe799dfb5a6901f23147cfaabe0e52210538100f61e86e1740915
 FD_V=10.4.2
-FD_SHA=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
+FD_SHA_X86_64=e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde
+FD_SHA_AARCH64=f32d3657473fba74e2600babc8db0b93420d51169223b7e8143b2ed55d8fd9e8
 BAT_V=0.26.1
-BAT_SHA=0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191
+BAT_SHA_X86_64=0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191
+BAT_SHA_AARCH64=6369242c584065f195fb20cb36fbd7cb63ae690605bbe89868a7596b596c2c23
 TLRC_V=1.13.1
-TLRC_SHA=e63b80e180b956ae2114c39d7fb10e607ffaa46b6d8c370d90868389a228584d
+TLRC_SHA_X86_64=e63b80e180b956ae2114c39d7fb10e607ffaa46b6d8c370d90868389a228584d
+TLRC_SHA_AARCH64=f2e52e567d22301ea926095eef97daefe2a60c2bea6222ecc27136a9c338e9f7
 GEF_V=2026.01
 GEF_SHA=04cdfe961f1e9151933d32cf6b548d9e6a76a1aef8b27c020c575b8d4264ed20
 ECS_V=3.4.0
 IGN_PIN=abc54db9cc3f6baf61b6ae7bfc6e2cc9858f5612
 IGN_SHA=9a43816e88a690af3c9b9507d60b782bb79ff2d6bfc67d1c1347df84de4ccd2f
+
+# this machine's builds; another architecture has none: its tools are
+# skipped, the rest of the kit works without them
+ARCH=$(uname -m)
+FZF_ARCH= STARSHIP_SHA= FZF_SHA= RG_SHA= FD_SHA= BAT_SHA= TLRC_SHA=
+case $ARCH in
+x86_64)
+    FZF_ARCH=amd64
+    STARSHIP_SHA=$STARSHIP_SHA_X86_64 FZF_SHA=$FZF_SHA_X86_64
+    RG_SHA=$RG_SHA_X86_64 FD_SHA=$FD_SHA_X86_64
+    BAT_SHA=$BAT_SHA_X86_64 TLRC_SHA=$TLRC_SHA_X86_64 ;;
+aarch64)
+    FZF_ARCH=arm64
+    STARSHIP_SHA=$STARSHIP_SHA_AARCH64 FZF_SHA=$FZF_SHA_AARCH64
+    RG_SHA=$RG_SHA_AARCH64 FD_SHA=$FD_SHA_AARCH64
+    BAT_SHA=$BAT_SHA_AARCH64 TLRC_SHA=$TLRC_SHA_AARCH64 ;;
+esac
 
 if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
     G='\033[1;32m' Y='\033[1;33m' B='\033[1;34m' D='\033[2m' N='\033[0m'
@@ -193,6 +216,7 @@ trap 'rm -rf "$DOT"/.new.* "$EXTRAS"/.new.*' EXIT
 # while the installed --version still matches the pin
 fetch_bin() {
     extras || return 0
+    [ -n "$4" ] || { warn "$1: no build for $ARCH, skipped"; return 0; }
     ver=${2#v}; ver=${ver%% *}
     if [ -x "bin/$1" ]; then
         v=$("bin/$1" --version 2>/dev/null | head -1 || echo unknown)
@@ -220,26 +244,27 @@ fetch_bin() {
 # release URLs below are single tokens split for the 80-column limit
 fetch_bin starship "v$STARSHIP_V" \
     "$GH/starship/starship/releases/download/v$STARSHIP_V\
-/starship-x86_64-unknown-linux-musl.tar.gz" \
+/starship-$ARCH-unknown-linux-musl.tar.gz" \
     "$STARSHIP_SHA" starship
 fetch_bin fzf "v$FZF_V" \
-    "$GH/junegunn/fzf/releases/download/v$FZF_V/fzf-$FZF_V-linux_amd64.tar.gz" \
+    "$GH/junegunn/fzf/releases/download/v$FZF_V\
+/fzf-$FZF_V-linux_$FZF_ARCH.tar.gz" \
     "$FZF_SHA" fzf
 fetch_bin rg "v$RG_V (ripgrep)" \
     "$GH/BurntSushi/ripgrep/releases/download/$RG_V\
-/ripgrep-$RG_V-x86_64-unknown-linux-musl.tar.gz" \
-    "$RG_SHA" "ripgrep-$RG_V-x86_64-unknown-linux-musl/rg"
+/ripgrep-$RG_V-$ARCH-unknown-linux-musl.tar.gz" \
+    "$RG_SHA" "ripgrep-$RG_V-$ARCH-unknown-linux-musl/rg"
 fetch_bin fd "v$FD_V" \
     "$GH/sharkdp/fd/releases/download/v$FD_V\
-/fd-v$FD_V-x86_64-unknown-linux-musl.tar.gz" \
-    "$FD_SHA" "fd-v$FD_V-x86_64-unknown-linux-musl/fd"
+/fd-v$FD_V-$ARCH-unknown-linux-musl.tar.gz" \
+    "$FD_SHA" "fd-v$FD_V-$ARCH-unknown-linux-musl/fd"
 fetch_bin bat "v$BAT_V" \
     "$GH/sharkdp/bat/releases/download/v$BAT_V\
-/bat-v$BAT_V-x86_64-unknown-linux-musl.tar.gz" \
-    "$BAT_SHA" "bat-v$BAT_V-x86_64-unknown-linux-musl/bat"
+/bat-v$BAT_V-$ARCH-unknown-linux-musl.tar.gz" \
+    "$BAT_SHA" "bat-v$BAT_V-$ARCH-unknown-linux-musl/bat"
 fetch_bin tldr "v$TLRC_V (tlrc)" \
     "$GH/tldr-pages/tlrc/releases/download/v$TLRC_V\
-/tlrc-v$TLRC_V-x86_64-unknown-linux-musl.tar.gz" \
+/tlrc-v$TLRC_V-$ARCH-unknown-linux-musl.tar.gz" \
     "$TLRC_SHA" tldr
 
 # fzf's bash key bindings (fuzzy Ctrl-R history, Ctrl-T files)
